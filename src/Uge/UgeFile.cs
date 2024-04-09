@@ -239,17 +239,38 @@ namespace Fur2Uge
 
         public void SetPulseInstr(int instrIndex, UgeInstrument ugePulse)
         {
-            ugeDutyInstruments[instrIndex] = ugePulse;
+            try
+            {
+                ugeDutyInstruments[instrIndex] = ugePulse;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new Exception("You have too many Pulse instruments! Limit is 15; Aborting...");
+            }
         }
 
         public void SetNoiseInstr(int instrIndex, UgeInstrument ugeNoise)
         {
-            ugeNoiseInstruments[instrIndex] = ugeNoise;
+            try
+            {
+                ugeNoiseInstruments[instrIndex] = ugeNoise;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new Exception("You have too many Noise instruments! Limit is 15; Aborting...");
+            }
         }
 
         public void SetWaveInstr(int instrIndex, UgeInstrument ugeWave)
         {
-            ugeWaveInstruments[instrIndex] = ugeWave;
+            try
+            {
+                ugeWaveInstruments[instrIndex] = ugeWave;
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new Exception("You have too many Wave instruments! Limit is 15; Aborting...");
+            }
         }
     }
 }

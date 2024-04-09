@@ -545,11 +545,13 @@ namespace Fur2Uge
                                                     short macroSigned16Bit = reader.ReadInt16();
                                                     macroData.Add((int)macroSigned16Bit & 0xFFFF);
                                                     blockLen -= 2;
+                                                    j++;
                                                     break;
                                                 case FurInstrMacroWordSize.SIGNED_32BIT:
                                                     int macroSigned32Bit = reader.ReadInt32();
                                                     macroData.Add((int)(macroSigned32Bit & 0xFFFFFFFF));
                                                     blockLen -= 4;
+                                                    j += 3;
                                                     break;
                                             }
                                         }

@@ -75,25 +75,25 @@ namespace Fur2Uge
                     throw new Exception("Invalid file, or file is corrupt.");
 
                 // Grab the rest of the .fur's header
-                int version = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
-                int reserved = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
-                int songInfoPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                int version = reader.ReadUInt16();
+                int reserved = reader.ReadUInt16();
+                int songInfoPointer = reader.ReadInt32();
                 byte[] reserved2 = reader.ReadBytes(8);
                 _furHeader = new FurHeader(magic, version, reserved, songInfoPointer, reserved2);
 
                 // Populate all of the song info
                 // More detail on the format here: https://github.com/tildearrow/furnace/blob/master/papers/format.md#song-info
                 _furModuleInfo.InfoBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
-                _furModuleInfo.BlockSize = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                _furModuleInfo.BlockSize = reader.ReadInt32();
                 var firstTimeBase = reader.ReadByte();
                 var firstSpeed1 = reader.ReadByte();
                 var firstSpeed2 = reader.ReadByte();
                 var firstInitialArpTime = reader.ReadByte();
                 var firstTicksPerSecond = BitConverter.ToSingle(reader.ReadBytes(4), 0);
-                var firstPatternLen = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                var firstPatternLen = reader.ReadUInt16();
                 if (firstPatternLen > PATTERN_LEN_LIMIT)
                     throw new Exception(string.Format("Invalid pattern length: {0}", firstPatternLen));
-                var firstOrdersLen = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                var firstOrdersLen = reader.ReadUInt16();
                 if (_furHeader.GetVersion() >= 80)
                 {
                     if (firstOrdersLen > 256)
@@ -110,17 +110,17 @@ namespace Fur2Uge
 
                 firstSong.InitDataA(firstTimeBase, firstSpeed1, firstSpeed2, firstInitialArpTime, firstTicksPerSecond, firstPatternLen, firstOrdersLen, firstHighlightA, firstHighlightB);
 
-                _furModuleInfo.InstrumentCount = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                _furModuleInfo.InstrumentCount = reader.ReadUInt16();
                 if (_furModuleInfo.InstrumentCount > INSTRUMENT_COUNT_LIMIT)
                     throw new Exception(string.Format("Too many instruments in the module! Count: {0}", _furModuleInfo.InstrumentCount));
-                _furModuleInfo.WavetableCount = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                _furModuleInfo.WavetableCount = reader.ReadUInt16();
                 if (_furModuleInfo.WavetableCount > WAVETABLE_COUNT_LIMIT)
                     throw new Exception(string.Format("Too many instruments in the module! Count: {0}", _furModuleInfo.WavetableCount));
-                _furModuleInfo.SampleCount = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                _furModuleInfo.SampleCount = reader.ReadUInt16();
                 if (_furModuleInfo.SampleCount > SAMPLE_COUNT_LIMIT)
                     throw new Exception(string.Format("Too many instruments in the module! Count: {0}", _furModuleInfo.SampleCount));
 
-                _furModuleInfo.PatternCountGlobal = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                _furModuleInfo.PatternCountGlobal = reader.ReadInt32();
 
                 // Populate the list of Chips used in this .fur module; Abort as soon as we hit the "END_OF_LIST"
                 byte[] chipTypeListByte = reader.ReadBytes(32);
@@ -208,28 +208,28 @@ namespace Fur2Uge
                 // Pointers for all the different Instruments
                 for (var i = 0; i < _furModuleInfo.InstrumentCount; i++)
                 {
-                    int thisPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int thisPointer = reader.ReadInt32();
                     _furModuleInfo.InstrumentPointers.Add(thisPointer);
                 }
 
                 // Pointers for all the different Wavetables
                 for (var i = 0; i < _furModuleInfo.WavetableCount; i++)
                 {
-                    int thisPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int thisPointer = reader.ReadInt32();
                     _furModuleInfo.WavetablePointers.Add(thisPointer);
                 }
 
                 // Pointers for all the different Samples
                 for (var i = 0; i < _furModuleInfo.SampleCount; i++)
                 {
-                    int thisPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int thisPointer = reader.ReadInt32();
                     _furModuleInfo.SamplePointers.Add(thisPointer);
                 }
 
                 // Pointers for all the different Patterns
                 for (var i = 0; i < _furModuleInfo.PatternCountGlobal; i++)
                 {
-                    int thisPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int thisPointer = reader.ReadInt32();
                     _furModuleInfo.PatternPointers.Add(thisPointer);
                 }
 
@@ -333,8 +333,8 @@ namespace Fur2Uge
                 _furModuleInfo.OldArpStrat = reader.ReadByte();
 
                 /// Virtual Tempo Data
-                var virtualTempoNumeratorOfFirstSong = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
-                var virtualTempoDenominatorOfFirstSong = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                var virtualTempoNumeratorOfFirstSong = reader.ReadUInt16();
+                var virtualTempoDenominatorOfFirstSong = reader.ReadUInt16();
                 firstSong.SetVirtualTempo(virtualTempoNumeratorOfFirstSong, virtualTempoDenominatorOfFirstSong);
 
                 /// Additional Subsongs
@@ -347,7 +347,7 @@ namespace Fur2Uge
                 _furModuleInfo.SubsongDataPointers = new List<int>();
                 for (var i = 0; i < _furModuleInfo.NumOfAdditionalSubsongs; i++)
                 {
-                    int thisPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int thisPointer = reader.ReadInt32();
                     _furModuleInfo.SubsongDataPointers.Add(thisPointer);
                 }
 
@@ -368,7 +368,7 @@ namespace Fur2Uge
                 }
 
                 // Patchbay (>= 135)
-                _furModuleInfo.PatchBayConnectionCount = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                _furModuleInfo.PatchBayConnectionCount = reader.ReadInt32();
 
                 _furModuleInfo.PatchBayList = new List<FurPatchBay>();
                 for (var i = 0; i < _furModuleInfo.PatchBayConnectionCount; i++)
@@ -395,13 +395,7 @@ namespace Fur2Uge
                 if (speedPatternLen < 0 || speedPatternLen > 16)
                     throw new Exception(string.Format("Speed Pattern Length out of Range (0-16): {0}", speedPatternLen));
 
-                var speedPattern = new byte[]
-                {
-                    reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte(),
-                    reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte(),
-                    reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte(),
-                    reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte()
-                };
+                var speedPattern = reader.ReadBytes(16);
                 firstSong.SetSpeedPattern(speedPatternLen, speedPattern);
 
                 /// Groove List
@@ -410,28 +404,15 @@ namespace Fur2Uge
                 for (var i = 0; i < _furModuleInfo.GrooveCount; i++)
                 {
                     byte grooveLen = reader.ReadByte();
-                    byte[] groovePattern = new byte[]
-                    {
-                        reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte(),
-                        reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte(),
-                        reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte(),
-                        reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte()
-                    };
+                    byte[] groovePattern = reader.ReadBytes(16);
                     FurGrooveEntry thisGroove = new FurGrooveEntry(grooveLen, groovePattern);
                     _furModuleInfo.GrooveEntriesList.Add(thisGroove);
                 }
 
                 /// Pointers to Asset Directories (>=156)
-                _furModuleInfo.InstrumentDirectoriesPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                _furModuleInfo.WavetableDirectoriesPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                _furModuleInfo.SampleDirectoriesPointer = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-
-                /*
-                _furSongInfo.InstrumentPointers = new List<int>();
-                _furSongInfo.WavetablePointers = new List<int>();
-                _furSongInfo.SamplePointers = new List<int>();
-                _furSongInfo.PatternPointers = new List<int>();
-                */
+                _furModuleInfo.InstrumentDirectoriesPointer = reader.ReadInt32();
+                _furModuleInfo.WavetableDirectoriesPointer = reader.ReadInt32();
+                _furModuleInfo.SampleDirectoriesPointer = reader.ReadInt32();
 
                 /// Define all of the Instruments based on their pointers and the module version string
                 _furModuleInfo.GlobalInstruments = new List<FurInstrument>();
@@ -443,9 +424,9 @@ namespace Fur2Uge
                     {
                         reader.BaseStream.Seek(_furModuleInfo.InstrumentPointers[i], SeekOrigin.Begin);
                         string finsFormatMagic = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
-                        int myBlockSize = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                        int instFormatVersion = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
-                        FurInstrumentType instrType = (FurInstrumentType)BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                        int myBlockSize = reader.ReadInt32();
+                        int instFormatVersion = reader.ReadUInt16();
+                        FurInstrumentType instrType = (FurInstrumentType)reader.ReadUInt16();
 
                         var thisInstr = new FurInstrument(finsFormatMagic, myBlockSize, instFormatVersion, instrType);
 
@@ -455,7 +436,7 @@ namespace Fur2Uge
                             string featureCode = System.Text.Encoding.Default.GetString(reader.ReadBytes(2));
                             if (InstrFeatureDict[featureCode] == FurInstrFeature.END_OF_FEATURES)
                                 break;
-                            int blockLen = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                            int blockLen = reader.ReadUInt16();
 
                             switch (InstrFeatureDict[featureCode])
                             {
@@ -479,17 +460,10 @@ namespace Fur2Uge
                                     List<FurOpData> furOPData = new List<FurOpData>();
                                     for (var j = 0; j < opCount; j++)
                                     {
-                                        var opData1 = reader.ReadByte();
-                                        var opData2 = reader.ReadByte();
-                                        var opData3 = reader.ReadByte();
-                                        var opData4 = reader.ReadByte();
-                                        var opData5 = reader.ReadByte();
-                                        var opData6 = reader.ReadByte();
-                                        var opData7 = reader.ReadByte();
-                                        var opData8 = reader.ReadByte();
+                                        var opData = reader.ReadBytes(8);
                                         blockLen -= 8; // Subtract the number of bytes we just read from the feature block length
 
-                                        FurOpData thisOpData = new FurOpData(opData1, opData2, opData3, opData4, opData5, opData6, opData7, opData8);
+                                        FurOpData thisOpData = new FurOpData(opData);
                                         furOPData.Add(thisOpData);
                                     }
 
@@ -497,7 +471,7 @@ namespace Fur2Uge
                                     thisInstr.AddFMInstData(thisFMInst);
                                     break;
                                 case FurInstrFeature.MACRO_DATA:
-                                    var macroHeaderLen = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                                    var macroHeaderLen = reader.ReadUInt16();
                                     blockLen -= 2;
 
                                     while (blockLen > 0)
@@ -752,16 +726,16 @@ namespace Fur2Uge
                 {
                     reader.BaseStream.Seek(_furModuleInfo.WavetablePointers[i], SeekOrigin.Begin);
                     string wtBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
-                    int wtBlockSize = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int wtBlockSize = reader.ReadInt32();
                     string wtName = GetNextString(sb, reader);
-                    int wtWidth = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                    int wtReserved = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                    int wtHeight = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                    int wtWidth = reader.ReadInt32();
+                    int wtReserved = reader.ReadInt32();
+                    int wtHeight = reader.ReadInt32();
 
                     List<int> wtData = new List<int>();
                     for (var j = 0; j < wtWidth; j++)
                     {
-                        int thisWTDataBlock = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                        int thisWTDataBlock = reader.ReadInt32();
                         wtData.Add(thisWTDataBlock);
                     }
 
@@ -776,18 +750,18 @@ namespace Fur2Uge
                     {
                         reader.BaseStream.Seek(_furModuleInfo.SamplePointers[i], SeekOrigin.Begin);
                         string smpBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
-                        int smpBlockSize = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                        int smpBlockSize = reader.ReadInt32();
                         string smpName = GetNextString(sb, reader);
-                        int smpLen = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                        int smpCompatibilityRate = BitConverter.ToInt32(reader.ReadBytes(4), 0);
-                        int smpC4Rate = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                        int smpLen = reader.ReadInt32();
+                        int smpCompatibilityRate = reader.ReadInt32();
+                        int smpC4Rate = reader.ReadInt32();
                         FurSampleDepth smpDepth = (FurSampleDepth)reader.ReadByte();
                         byte smpLoopDirection = reader.ReadByte();
                         byte smpFlags = reader.ReadByte();
                         byte smpFlags2 = reader.ReadByte();
 
-                        int smpLoopStart = BitConverter.ToInt32(reader.ReadBytes(4), 0); // -1 means No Loop
-                        int smpLoopEnd = BitConverter.ToInt32(reader.ReadBytes(4), 0); // -1 means No Loop
+                        int smpLoopStart = reader.ReadInt32(); // -1 means No Loop
+                        int smpLoopEnd = reader.ReadInt32(); // -1 means No Loop
 
                         // Sample Presence Bitfields
                         // For future use
@@ -879,10 +853,10 @@ namespace Fur2Uge
                         reader.BaseStream.Seek(_furModuleInfo.PatternPointers[i], SeekOrigin.Begin);
 
                         string ptnBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
-                        int ptnBlockSize = BitConverter.ToInt32(reader.ReadBytes(4), 0);
+                        int ptnBlockSize = reader.ReadInt32();
                         int ptnSubSong = reader.ReadByte();
                         int ptnChannelID = reader.ReadByte();
-                        int ptnIndex = BitConverter.ToUInt16(reader.ReadBytes(2), 0);
+                        int ptnIndex = reader.ReadUInt16();
                         string ptnName = GetNextString(sb, reader);
 
                         FurSong ptnParentSong = _furSongs[ptnSubSong];

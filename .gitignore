@@ -3,6 +3,16 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Music Tracker Modules
+*.fur
+*.uge
+
+# Exports
+*.gb
+*.gbc
+*.z80
+*.vgm
+
 # User-specific files
 *.rsuser
 *.suo

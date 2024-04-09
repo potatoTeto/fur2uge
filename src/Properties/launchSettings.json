@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Fur2Uge": {
+      "commandName": "Project",
+      "commandLineArgs": "input/input.fur output/output.uge -d"
+    }
+  }
+}

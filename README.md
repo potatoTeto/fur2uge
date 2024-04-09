@@ -3,6 +3,9 @@
 
 fur2uge is a conversion tool for Furnace .uge modules to hUGETracker .uge. The tool is designed to allow [Furnace](https://github.com/tildearrow/furnace) users to convert their project files to [hUGETracker](https://github.com/SuperDisk/hUGETracker) project files, so that they can be exported for homebrew use (including [GB Studio](https://www.gbstudio.dev/)).
 
+# Download
+https://github.com/potatoTeto/fur2uge/releases
+
 ## Features
 - Automatic volume column->effect conversion (If an effect is also on the row, the volume will get overwritten)
 - All .uge effects supported, minus Callback Routines and Global Volume

@@ -36,25 +36,25 @@ You can use the ``-d <DPath>`` flag to output the zlib-decompressed .fur file, t
 # Implementation
 Each channel must be handled one at a time, row by row. Every new instrument must get added and considered on a per-channel basis (Pulses get merged into one instrument list)
 This is because the channels can share instruments, but Wave has different rules in hUGETracker. Wave needs its own list of instruments.
-### Supported effects:
-00xy - Arpeggio
-01xx - Portamento Up
-02xx - Portamento Down
-03xx - Tone Portamento
-04xx - Vibrato
-
-EDxx - Note Delay
-80xx - Set Panning
-12xx - Set Duty Cycle
-0Axy - Volume Slide
-0Bxx - Position Jump
-
-0Dxx - Pattern Break
-ECxx - Note Cut
-0Fxx - Set Speed
+### Supported Furnace Effects:
+- 00xy - Arpeggio
+- 01xx - Portamento Up
+- 02xx - Portamento Down
+- 03xx - Tone Portamento
+- 04xx - Vibrato
+- 08xx - Set Pan (Hardware)
+- 0Axy - Volume Slide
+- 0Bxx - Position Jump
+- 0Dxx - Pattern Break
+- 0Fxx - Set Speed
+- 12xx - Set Duty Cycle
+- 80xx - Set Pan (Software)
+- ECxx - Note Cut
+- EDxx - Note Delay
 
 - FFxx (Stop song) is not supported. If you want the song to stop, create another row and loop it forever with 0Bxx.
 
+—
 ## Building
 
 There are no dependencies required, beyond .NET and C#: Clone the project and build in your favorite IDE (e.g. Visual Studio)

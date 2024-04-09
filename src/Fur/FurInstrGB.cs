@@ -1,5 +1,7 @@
 ﻿
 
+
+
 namespace Fur2Uge
 {
     public class FurInstrGB
@@ -31,6 +33,16 @@ namespace Fur2Uge
         public (byte, List<FurInstrGBHWSeqCmd>) GetHWSeq()
         {
             return (_gbHWSeqLen, _gbHWSeqCmds);
+        }
+
+        public byte GetEnvVol()
+        {
+            return _gbEnvVol;
+        }
+
+        public void SetEnvVol(byte val)
+        {
+            _gbEnvVol = val;
         }
     }
 }

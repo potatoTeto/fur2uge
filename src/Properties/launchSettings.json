@@ -2,7 +2,7 @@
   "profiles": {
     "Fur2Uge": {
       "commandName": "Project",
-      "commandLineArgs": "input/input.fur output/output.uge -d"
+      "commandLineArgs": "input/fur2uge_test.fur output/fur2uge_test.uge -d"
     }
   }
 }

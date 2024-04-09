@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using static Fur2Uge.FurFile;
 using static Fur2Uge.UgeFile;
 
@@ -102,6 +104,13 @@ namespace Fur2Uge
             List<FurInstrument> furWaveInstruments = new List<FurInstrument>();
             List<FurInstrument> furNoiseInstruments = new List<FurInstrument>();
             UgeGBChannelState[] ugeGBChannelStates = new UgeGBChannelState[4];
+            Dictionary<int, List<byte>> seenVolumes = new Dictionary<int, List<byte>>();
+            Dictionary<(int, byte), int> clonedVolInstrumentLookup = new Dictionary<(int, byte), int>();  // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
+            for(var i = 0; i < moduleInfo.GlobalInstruments.Count; i++)
+            {
+                seenVolumes[i] = new List<byte>();
+            }
+
             for (var i = 0; i < ugeGBChannelStates.Length; i++)
                 ugeGBChannelStates[i] = new UgeGBChannelState(i);
 
@@ -116,10 +125,23 @@ namespace Fur2Uge
                     /// Read all the pattern data and store it into the uge file, in order.
                     foreach (FurPatternRowData thisRowData in patRowData)
                     {
+                        // Grab all the data about this row
                         var rowIndex = thisRowData.GetRowIndex();
+                        int noteVal = thisRowData.GetNoteVal();
+                        int volVal = thisRowData.GetVolume();
+                        if (volVal >= 0)
+                            ugeGBChannelStates[chanID].SetVol((byte)volVal);
+                        
+                        List<byte> furAllChannelFxColumns = thisRowData.GetEffectData();
+
+                        // Also declaring some variables, for later...
+                        byte furFxCmd;
+                        byte furFxVal;
+                        byte ugeFXVal;
+                        UgeEffectTable? ugeFxCmd;
+                        bool newVolInstr = false;
 
                         // Notes first
-                        int noteVal = thisRowData.GetNoteVal();
                         if (noteVal >= 0)
                         {
                             patCon.SetNote((GBChannel)chanID, (byte)orderID, rowIndex, FurNoteToUgeNote(noteVal));
@@ -129,8 +151,10 @@ namespace Fur2Uge
                         int instrVal = thisRowData.GetInstrumentVal();
                         bool duplicateInstr = false;
                         int duplicateCheckingIndex = 0;
+                        byte gbEnvVol;
                         if (instrVal >= 0)
                         {
+                            var chanCurrVol = ugeGBChannelStates[chanID].GetVol();
                             // Keep track of every unique instrument used (will be defined later)
                             switch (chanID)
                             {
@@ -139,18 +163,108 @@ namespace Fur2Uge
                                 case 1:
                                     foreach (FurInstrument inst in furPulseInstruments)
                                     {
-                                        if (inst == moduleInfo.GlobalInstruments[instrVal])
+                                        var instrID = inst.GetID();
+
+                                        /// Check if we've already played this instrument previously
+                                        if (instrID == moduleInfo.GlobalInstruments[instrVal].GetID())
                                         {
-                                            duplicateInstr = true;
-                                            instrVal = duplicateCheckingIndex;
+                                            // Check if the volume on this row is going to be the same as a previously-played instrument (also consider Uge Cxx). If it's not, we need to mark it as a duplicate, too.
+
+                                            // Consider if we're setting a new volume here
+                                            gbEnvVol = inst.GetInstrGB().GetEnvVol();
+                                            if (volVal >= 0)
+                                            {
+                                                if (gbEnvVol != volVal)
+                                                {
+                                                    if (!seenVolumes[instrID].Contains((byte)volVal))
+                                                    {
+                                                        newVolInstr = true;
+                                                    }
+                                                    else
+                                                    {
+                                                        duplicateInstr = true;
+                                                        instrVal = duplicateCheckingIndex;
+
+                                                        // Correct the instrVal if we've already seen this volume before
+                                                        if (seenVolumes[instrID].Contains((byte)volVal))
+                                                        {
+                                                            instrVal = clonedVolInstrumentLookup[(instrID, (byte)volVal)];
+                                                            ugeGBChannelStates[chanID].SetVol((byte)volVal);
+                                                            ugeGBChannelStates[chanID].SetCurrInstrID(instrVal);
+                                                            chanCurrVol = (byte)volVal;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    duplicateInstr = true;
+                                                    instrVal = duplicateCheckingIndex;
+                                                }
+                                            }
+                                            else if (chanCurrVol != gbEnvVol)
+                                            {
+                                                if (!seenVolumes[instrID].Contains(gbEnvVol))
+                                                    newVolInstr = true;
+                                                else
+                                                {
+                                                    duplicateInstr = true;
+                                                    instrVal = duplicateCheckingIndex;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                duplicateInstr = true;
+                                                instrVal = duplicateCheckingIndex;
+                                            }
                                             break;
                                         }
                                         duplicateCheckingIndex++;
                                     }
+                                    
                                     if (!duplicateInstr)
                                     {
-                                        furPulseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                        FurInstrument instr = moduleInfo.GlobalInstruments[instrVal];
+                                        var instrID = instr.GetID();
+                                        gbEnvVol = instr.GetInstrGB().GetEnvVol();
+                                        if (volVal >= 0)
+                                        {
+                                            if (gbEnvVol != volVal)
+                                                if (!seenVolumes[instrID].Contains((byte)volVal)) 
+                                                    newVolInstr = true;
+                                        }
+
+                                        // Because this envelope * volume column does not match anything else we've played before, we need to create a modified copy of the instrument that contains the new volume value.
+                                        if (newVolInstr) {
+                                            instr = moduleInfo.GlobalInstruments[instrVal].ShallowCopy();
+                                            int newVolVal;
+                                            if (volVal > 0)
+                                            {
+                                                instr.SetGBVol((byte)volVal);
+                                                newVolVal = volVal;
+                                            }
+                                            else
+                                            {
+                                                instr.SetGBVol((byte)chanCurrVol);
+                                                newVolVal = chanCurrVol;
+                                            }
+
+                                            seenVolumes[instrID].Add((byte)newVolVal);
+
+                                            clonedVolInstrumentLookup[(instrID, (byte)newVolVal)] = furPulseInstruments.Count;
+                                            volVal = -9999;
+                                        }
+
+                                        furPulseInstruments.Add(instr);
                                         instrVal = furPulseInstruments.Count - 1;
+                                        ugeGBChannelStates[chanID].SetCurrInstrID(instrVal);
+                                    } else
+                                    {
+                                        try
+                                        {
+                                            instrVal = clonedVolInstrumentLookup[(furPulseInstruments[ugeGBChannelStates[chanID].GetCurrInstrID()].GetID(), chanCurrVol)];
+                                        }
+                                        catch (KeyNotFoundException) {
+                                        }
                                     }
                                     break;
                                 case 2:
@@ -192,16 +306,10 @@ namespace Fur2Uge
                         }
 
                         // Now copy the volume column (which might or might not get overwritten if an effect is present)
-                        int volVal = thisRowData.GetVolume();
-                        if (volVal >= 0)
+                        if (volVal >= 0 && !newVolInstr && ugeGBChannelStates[chanID].GetVol() != volVal)
                             patCon.SetEffect((GBChannel)chanID, (byte)orderID, rowIndex, UgeEffectTable.SET_VOL, (byte)volVal);
 
                         // Finally, copy all of the effect columns for this channel's row
-                        List<byte> furAllChannelFxColumns = thisRowData.GetEffectData();
-
-                        byte furFxCmd;
-                        byte furFxVal;
-                        byte ugeFXVal;
 
                         // Before writing any new effects, update the state of the channel,
                         // just in case we turned off any effects on this row, for any FX column...
@@ -258,7 +366,7 @@ namespace Fur2Uge
                         furFxCmd = furAllChannelFxColumns[0];
                         furFxVal = furAllChannelFxColumns[1];
 
-                        UgeEffectTable? ugeFxCmd = null;
+                        ugeFxCmd = null;
                         ugeFXVal = furFxVal;
 
                         switch (furFxCmd)
@@ -365,16 +473,42 @@ namespace Fur2Uge
                 if (gbInstr == null)
                     throw new Exception(string.Format("Invalid GB Wave Instrument: {0}", name));
 
-                var gbParams = gbInstr.GetParams(); // returns (_gbEnvLen, _gbEnvDir, _gbEnvVol, _gbSndLen, _gbFlags, _gbHWSeqLen, _gbHWSeqCmds)
-                var wsParams = wsInstr.GetParams(); // returns (_wsFirstWave, _wsSecondWave, _wsRateDivider, _wsEffect, _singleEffect, _wsEnabled, _wsGlobal, _wsSpeed, _wsParam1, _wsParam2, _wsParam3, _wsParam4)
-                List<FurInstrMacro> macros = waveInst.GetMacros();
-
                 uint wtVol = (uint)UgeWaveVolumes.FULL;
                 var wtIndex = 0x0;
 
-                var wsEnabled = wsParams.Item6;
-                if (wsEnabled)
-                    wtIndex = wsParams.Item1;
+                // Grab the parameters for the GB Instrument
+                var gbParams = gbInstr.GetParams(); // returns (_gbEnvLen, _gbEnvDir, _gbEnvVol, _gbSndLen, _gbFlags, _gbHWSeqLen, _gbHWSeqCmds)
+                List<FurInstrMacro> macros = waveInst.GetMacros();
+
+                // Grab the wave from the Wave Synthesizer
+                // This data will be overwritten if a Wave Macro is present (parsed further below)
+                if (wsInstr != null)
+                {
+                    var wsParams = wsInstr.GetParams(); // returns (_wsFirstWave, _wsSecondWave, _wsRateDivider, _wsEffect, _singleEffect, _wsEnabled, _wsGlobal, _wsSpeed, _wsParam1, _wsParam2, _wsParam3, _wsParam4)
+                    var wsEnabled = wsParams.Item6;
+                    if (wsEnabled)
+                        wtIndex = wsParams.Item1;
+                }
+
+                // Handle all the different kinds of macros. If the macro length is > 0, we will additionally add it to the subpattern data
+                UgeSongPattern ugeSubPattern = new UgeSongPattern((uint)instrIndex, true);
+                foreach (FurInstrMacro m in macros)
+                {
+                    var data = m.GetMacroData();
+
+                    switch(m.GetMacroCode())
+                    {
+                        case FurInstrMacroCode.PITCH:
+
+                            break;
+                        case FurInstrMacroCode.VOL:
+                            wtVol = (uint)data[0];
+                            break;
+                        case FurInstrMacroCode.WAVE:
+                            wtIndex = data[0];
+                            break;
+                    }
+                }
 
                 UgeInstrument ugeWave = new UgeInstrument(name, (uint)UgeInstrumentType.WAVETABLE, wtVol, (uint)wtIndex, macros);
 

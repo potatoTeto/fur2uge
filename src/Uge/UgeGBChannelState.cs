@@ -1,11 +1,14 @@
 ﻿
+
 namespace Fur2Uge
 {
     public class UgeGBChannelState
     {
         private bool _leftSpeakerOn = true;
         private bool _rightSpeakerOn = true;
+        private byte _currVol = 0xF;
         private int _id;
+        private int _currInstrID = 0;
 
         public UgeGBChannelState(int id)
         {
@@ -30,6 +33,26 @@ namespace Fur2Uge
             byte combinedByte = (byte)(firstNybble | fifthNybble);
 
             return combinedByte;
+        }
+
+        public void SetVol(byte vol)
+        {
+            _currVol = vol;
+        }
+
+        public byte GetVol()
+        {
+            return _currVol;
+        }
+
+        public int GetCurrInstrID()
+        {
+            return _currInstrID;
+        }
+
+        public void SetCurrInstrID(int value)
+        {
+            _currInstrID = value;
         }
     }
 }

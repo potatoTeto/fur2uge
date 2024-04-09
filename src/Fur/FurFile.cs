@@ -533,26 +533,23 @@ namespace Fur2Uge
                                             {
                                                 case FurInstrMacroWordSize.UNSIGNED_8BIT:
                                                     byte macroByte = reader.ReadByte();
-                                                    macroData.Add(macroByte);
+                                                    macroData.Add((int)macroByte);
                                                     blockLen--;
                                                     break;
                                                 case FurInstrMacroWordSize.SIGNED_8BIT:
                                                     sbyte macroSByte = reader.ReadSByte();
-                                                    macroData.Add(macroSByte);
+                                                    macroData.Add((int)macroSByte & 0xFF);
                                                     blockLen--;
-                                                    j++;
                                                     break;
                                                 case FurInstrMacroWordSize.SIGNED_16BIT:
                                                     short macroSigned16Bit = reader.ReadInt16();
-                                                    macroData.Add(macroSigned16Bit);
+                                                    macroData.Add((int)macroSigned16Bit & 0xFFFF);
                                                     blockLen -= 2;
-                                                    j += 3;
                                                     break;
                                                 case FurInstrMacroWordSize.SIGNED_32BIT:
                                                     int macroSigned32Bit = reader.ReadInt32();
-                                                    macroData.Add(macroSigned32Bit);
+                                                    macroData.Add((int)(macroSigned32Bit & 0xFFFFFFFF));
                                                     blockLen -= 4;
-                                                    j += 3;
                                                     break;
                                             }
                                         }
@@ -712,6 +709,7 @@ namespace Fur2Uge
                                 blockLen--;
                             }*/
                         }
+                        thisInstr.SetID(_furModuleInfo.GlobalInstruments.Count);
                         _furModuleInfo.GlobalInstruments.Add(thisInstr);
                     }
                     else

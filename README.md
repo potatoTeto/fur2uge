@@ -20,20 +20,17 @@ You can use the ``-d <DPath>`` flag to output the zlib-decompressed .fur file, t
 ## Caveats
 
 - All patterns must have 64 rows. They cannot be increased or decreased. However, cutting the pattern short with Dxx and Bxx is allowed.
+- No more than 15 different unique instruments may be played per channel (Pulse 1 & 2 combined may only have 15 instruments). A single instrument playing on all 4 channels will count as 3 instruments (Pulse, Wave, Noise).
 - Only up to 16 waveforms are allowed. They must be exactly 32 blocks in length, with a height of 16 (0-F)
 - Only hardware envelopes are allowed for Pulse 1, Pulse 2, and Noise. “Initialize Envelope on Every Note” must be enabled.
 - Hardware sequence is allowed, but only on Pulse 1, and only for one tick (do not add more than one–the rest will be ignored!)
 - Macros are not allowed for any of the channels, with a few exceptions:
-- On the Pulse Channels, Duty Cycle may have a length of 1
--- It will otherwise default to a 12.5% Pulse
-- On Wave Channel, Wave Macro must have a length of 1.
--- Also on Wave Channel, Volume Macro must have a length of 1.
+- On the Pulse Channels, Duty Cycle may have a length of 1—It will otherwise default to a 12.5% Pulse
+- On Wave Channel, Wave Macro must have a length of 1. Likewise, the Volume Macro must have a length of 1. You may alternatively use the Wave Sequencer, but it will only account for the first wave, without any kind of modulation/speed changing/morphing done on the waveform.
 - The effect column may not be expanded for any channel: Only one effect is allowed at any given time.
 - No subsongs are allowed.
-- Messing with Virtual Tempo/Base Tempo is not allowed. Only use Speed (For now… Unless I figure out the song speed/tempo math between both trackers)
-- Volume may only be defined if an effect is not on the same row for the channel. Axy (Volume Slide) is an exception, however.
-- Volume and Axy may only be used whenever a note is played. This is to ensure that audio output is converted accurately and as expected.
-- No more than 16 different unique instruments may be played for the entire song. A single instrument playing on all 4 channels will count as 3 instruments (Pulse, Wave, Noise).
+- Messing with Virtual Tempo/Base Tempo is not considered. Only use Speed (For now… Unless I figure out the song speed/tempo math between both trackers)
+- Volume may only be defined if an effect is not on the same row for the channel. Axy (Volume Slide) is an exception. Both Volume and Axy may only be used whenever a note is played. This is to ensure that audio output is converted accurately and as expected.
 
 —
 # Implementation

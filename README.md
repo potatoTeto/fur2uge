@@ -25,9 +25,6 @@ You can use the ``-d <DPath>`` flag to output the zlib-decompressed .fur file, t
 - Only up to 16 waveforms are allowed. They must be exactly 32 blocks in length, with a height of 16 (0-F)
 - Only hardware envelopes are allowed for Pulse 1, Pulse 2, and Noise. “Initialize Envelope on Every Note” must be enabled.
 - Hardware sequence is allowed, but only on Pulse 1, and only for one tick (do not add more than one–the rest will be ignored!)
-- Macros are not allowed for any of the channels, with a few exceptions:
-- On the Pulse Channels, Duty Cycle may have a length of 1—It will otherwise default to a 12.5% Pulse
-- On Wave Channel, Wave Macro must have a length of 1. Likewise, the Volume Macro must have a length of 1. You may alternatively use the Wave Sequencer, but it will only account for the first wave, without any kind of modulation/speed changing/morphing done on the waveform.
 - The effect column may not be expanded for any channel: Only one effect is allowed at any given time.
 - No subsongs are allowed.
 - Messing with Virtual Tempo/Base Tempo is not considered. Only use Speed (For now… Unless I figure out the song speed/tempo math between both trackers)
@@ -35,6 +32,10 @@ You can use the ``-d <DPath>`` flag to output the zlib-decompressed .fur file, t
 ---
 Each channel must be handled one at a time, row by row. Every new instrument must get added and considered on a per-channel basis (Pulses get merged into one instrument list)
 - This is because the channels can share instruments, but Wave has different rules in hUGETracker. Wave needs its own list of instruments.
+---
+Macros are partially supported, with a few more things to note:
+- Wave Macros may be utilized for setting the waveform on the Wavetable channel. Please note that the program will prioritize the first value in the macro. Alternatively, you can employ the Wave Sequencer for the same purpose, but it will only recognize the initial wave, devoid of any modulation, speed adjustment, or waveform morphing.
+- All macros must either A) share the same length and loop point as all the other macros in the instrument, or B) Except for the longest macro within the instrument, all other macros must have loop points shorter than the longest one. This is crucial as the program heavily utilizes Subpatterns to enable macro support. While the program will adhere to the user's specifications, deviating from this restriction may yield unexpected auditory outcomes.
 
 ## Supported Furnace Effects:
 - 00xy - Arpeggio

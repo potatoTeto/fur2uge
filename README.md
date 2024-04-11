@@ -12,7 +12,7 @@ https://github.com/potatoTeto/fur2uge/releases
 
 ## Usage
 ### Casual Usage
-Place all of your prepared .fur files in the /input/ folder, located at the same location that the program is. Double-click on "convert.bat" to get the files in the /output/ folder.
+Place all of your prepared .fur files in the ``/input/`` folder, located at the same location that the program is. Double-click on ``convert.bat`` to get the files in the ``/output/`` folder.
 ### Terminal Usage
 ``Fur2Uge --i <input>.fur --o <output>.uge``
 

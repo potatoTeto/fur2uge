@@ -52,6 +52,11 @@
             {
                 InstrumentValue = (byte)(instrumentIndex + 1);
             }
+
+            internal void SetJump(int loopPoint)
+            {
+                JumpCmdVal = (byte)loopPoint;
+            }
         }
     }
 }

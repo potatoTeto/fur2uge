@@ -47,5 +47,10 @@ namespace Fur2Uge
         {
             return _macroData;
         }
+
+        public int GetLoopPoint()
+        {
+            return _macroLoop;
+        }
     }
 }

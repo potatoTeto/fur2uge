@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Channels;
@@ -11,16 +12,18 @@ namespace Fur2Uge
     {
         public static void Main(string[] args)
         {
-            string fIn = "";
-            string fOut = "";
+            IConfiguration config = new ConfigurationBuilder().AddCommandLine(args).Build();
+
             bool dumpCompressedFur = false;
             string decompressedFurPath = "";
+            string fIn = string.Empty, fOut = string.Empty;
+            int panMacroOnChannel = 0;
 
             // File in/out arg parsing
-            if (args.Length >= 2)
+            if (config["i"].Length > 0 && config["o"].Length > 0)
             {
-                fIn = args[0];
-                fOut = args[1];
+                fIn = config["i"];
+                fOut = config["o"];
 
                 // Create the directories, if they do not exist.
                 bool exists = System.IO.Directory.Exists(Path.GetDirectoryName(fIn));
@@ -29,18 +32,56 @@ namespace Fur2Uge
                 exists = System.IO.Directory.Exists(Path.GetDirectoryName(fOut));
                 if (!exists)
                     System.IO.Directory.CreateDirectory(Path.GetDirectoryName(fOut));
-            }
-            if (args.Length >= 3)
+            } else
             {
-                if (args[2].Equals("-d")) {
-                    dumpCompressedFur = true;
-                    try
-                    {
-                        decompressedFurPath = args[3];
-                    } catch(IndexOutOfRangeException e)
-                    {
-                        decompressedFurPath = Path.GetDirectoryName(fOut);
-                    }
+                throw new Exception("Please provide an input and output path.\n\nUsage:\nfur2uge --i <input>.fur --o <output>.fur");
+            }
+
+            if (config["d"] != null)
+            {
+                dumpCompressedFur = true;
+                try
+                {
+                    decompressedFurPath = config["d"];
+                }
+                catch (IndexOutOfRangeException e)
+                {
+                    decompressedFurPath = Path.GetDirectoryName(fOut);
+                }
+            }
+
+            if (config["pan"] != null)
+            {
+                try
+                {
+                    int panChanID = Int32.Parse(config["pan"]);
+                    if (panChanID < 0 || panChanID > 3)
+                        throw new Exception(string.Format("Invalid Channel to Pan: {0}. Aborting...", panChanID));
+
+                    panMacroOnChannel = panChanID + 1;
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine($"Unable to parse '{config["pan"]}'");
+                }
+            }
+
+            bool autoVolumeDetection = true;
+            if (config["v"] != null)
+            {
+                try
+                {
+                    int volOption = Int32.Parse(config["v"]);
+                    if (volOption == 0)
+                        autoVolumeDetection = false;
+                    else if (volOption > 1)
+                        autoVolumeDetection = true;
+                    else
+                        throw new Exception(string.Format("Invalid argument for auto-volume detection: --v {0}.\n\nPlease specify 0 for Disabled or 1 for Enabled.\nAborting...", volOption));
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine($"Unable to parse '{config["v"]}'");
                 }
             }
 
@@ -51,13 +92,13 @@ namespace Fur2Uge
             UgeFile ugeFile = new UgeFile();
 
             // Parse the .fur file, and then populate its data into the .uge data tree we created
-            ParseFur(furFile, ugeFile);
+            ParseFur(furFile, ugeFile, autoVolumeDetection, panMacroOnChannel);
 
             // Write the .uge data to a binary.
             ugeFile.Write(fOut);
         }
 
-        public static void ParseFur(FurFile furFile, UgeFile ugeFile)
+        public static void ParseFur(FurFile furFile, UgeFile ugeFile, bool autoVolumeDetection, int panMacroOnChannel)
         {
             FurModuleInfo moduleInfo = furFile.GetModuleInfo();
 
@@ -267,7 +308,7 @@ namespace Fur2Uge
                                         FurInstrument instr = moduleInfo.GlobalInstruments[instrVal];
                                         var instrID = instr.GetID();
                                         gbEnvVol = instr.GetInstrGB().GetEnvVol();
-                                        if (volVal >= 0)
+                                        if (volVal >= 0 && autoVolumeDetection)
                                         {
                                             if (gbEnvVol != volVal)
                                                 if (!seenVolumes[instrID].Contains((byte)volVal)) 
@@ -494,10 +535,9 @@ namespace Fur2Uge
                 var hwSeq = gbInstr.GetHWSeq();
                 List<FurInstrMacro> macros = pulseInst.GetMacros();
 
-
                 //return (_gbHWSeqSweepSpeed, _gbHWSeqSweepDir, _gbHWSeqShiftVal);
                 UgeInstrument ugePulse = new UgeInstrument(name, (uint)UgeInstrumentType.PULSE, gbParams.Item1, (gbParams.Item2 > 0x1) ? 0U : 1U,
-                    gbParams.Item3, gbParams.Item4, gbParams.Item5, gbParams.Item6, gbParams.Item7, macros, null
+                    gbParams.Item3, gbParams.Item4, gbParams.Item5, gbParams.Item6, gbParams.Item7, macros, null, 0x1, 0x1, panMacroOnChannel
                     );
 
                 ugeFile.SetPulseInstr(instrIndex, ugePulse);

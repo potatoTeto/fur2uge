@@ -1,7 +1,5 @@
 # fur2uge
 ## Convert Furnace .uge modules into hUGETracker .uge modules
-![screenshot](goodbye.png)
-
 fur2uge is a conversion tool for Furnace .uge modules to hUGETracker .uge. The tool is designed to allow [Furnace](https://github.com/tildearrow/furnace) users to convert their project files to [hUGETracker](https://github.com/SuperDisk/hUGETracker) project files, so that they can be exported for homebrew use (including [GB Studio](https://www.gbstudio.dev/)).
 
 # Download
@@ -16,9 +14,14 @@ https://github.com/potatoTeto/fur2uge/releases
 ### Casual Usage
 Place all of your prepared .fur files in the /input/ folder, located at the same location that the program is. Double-click on "convert.bat" to get the files in the /output/ folder.
 ### Terminal Usage
-``Fur2Uge <input>.fur <output>.uge``
+``Fur2Uge --i <input>.fur --o <output>.uge``
 
-You can use the ``-d <DPath>`` flag to output the zlib-decompressed .fur file, too. If ``<DPath>`` is not specified, the program will output the decompressed .fur to the output .uge file's directory.
+### Command Line Arguments
+``--d <DPath>`` - Output the zlib-decompressed .fur file, too. If ``<DPath>`` is not specified, the program will output the decompressed .fur to the output .uge file's directory.
+
+``--pan <channelNumber>`` - Pan Macros will only work on the channel specified by <channelNumber> (0-3). By default, it only works on Pulse 1.
+
+``--v <0 or 1>`` - If **Disabled (0)**, a new instrument will **not** be made when considering the .fur's volume column. Please keep in mind that .uge limits users to 15 instruments per channel type (Duty/Wave/Noise). By default, this is **Enabled (1)**.
 
 ## Caveats
 - All patterns must have 64 rows. They cannot be increased or decreased. However, cutting the pattern short with Dxx and Bxx is allowed.
@@ -37,6 +40,7 @@ Each channel must be handled one at a time, row by row. Every new instrument mus
 Macros are partially supported, with a few more things to note:
 - Wave Macros may be utilized for setting the waveform on the Wavetable channel. Please note that the program will prioritize the first value in the macro. Alternatively, you can employ the Wave Sequencer for the same purpose, but it will only recognize the initial wave, devoid of any modulation, speed adjustment, or waveform morphing.
 - All macros must either A) share the same length and loop point as all the other macros in the instrument, or B) Except for the longest macro within the instrument, all other macros must have loop points shorter than the longest one. This is crucial as the program heavily utilizes Subpatterns to enable macro support. While the program will adhere to the user's specifications, deviating from this restriction may yield unexpected auditory outcomes.
+- Due to driver/design limitations, Panning Macros will only work if the entire song is mono whenever the instrument with a pan macro is used. It will also only work on Pulse 1. If you need it on Pulse 2, pass the ``-pan2`` argument into the program.
 
 ## Supported Furnace Effects:
 - 00xy - Arpeggio

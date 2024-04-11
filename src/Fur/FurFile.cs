@@ -49,7 +49,7 @@ namespace Fur2Uge
 
                 if (dumpCompressedFur)
                 {
-                    using var writer = new BinaryWriter(File.OpenWrite(Path.Combine(decompressedFurPath, Path.GetFileNameWithoutExtension(fIn) + "_decompressed.fur")));
+                    using var writer = new BinaryWriter(File.OpenWrite(Path.Combine(Path.GetDirectoryName(decompressedFurPath), Path.GetFileNameWithoutExtension(fIn) + "_decompressed.fur")));
                     writer.Write(furBytes);
                 }
             }

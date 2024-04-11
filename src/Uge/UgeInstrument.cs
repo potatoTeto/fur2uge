@@ -1,4 +1,7 @@
-﻿namespace Fur2Uge
+﻿using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
+namespace Fur2Uge
 {
     public partial class UgeFile
     {
@@ -33,10 +36,11 @@
             private byte _dutyCycle;
             private uint _wavetableVolume;
             private uint _wavetableIndex;
+            private byte panState = 0x3;
 
             // Write the below if Header Version Number < 6:
             private bool _subPatternEnabled;
-            private UgePatternRow[] _subRows;
+            private UgePatternRow[] _subPattern;
 
             // Only use if Version Number >=4 && Version Number < 6
             public sbyte[] _noiseMacroData;
@@ -53,14 +57,14 @@
                 _freqSweepDirection = 0x1;
                 _wavetableVolume = 0x1;
                 _noiseMacroData = new sbyte[6];
-                _subRows = new UgePatternRow[64];
-                for (var i = 0; i < _subRows.Length; i++)
+                _subPattern = new UgePatternRow[64];
+                for (var i = 0; i < _subPattern.Length; i++)
                 {
-                    _subRows[i] = new UgePatternRow(true);
+                    _subPattern[i] = new UgePatternRow(true);
                 }
             }
 
-            public UgeInstrument(string name, uint instrumentType, uint wavetableVolume, uint wavetableIndex, List<FurInstrMacro> macros)
+            public UgeInstrument(string name, uint instrumentType, uint wavetableVolume, uint wavetableIndex, List<FurInstrMacro> macros, int panMacroOnChannel = 1)
             {
                 _name.Val = name;
                 _type = instrumentType;
@@ -71,14 +75,9 @@
                 _wavetableVolume = wavetableVolume;
                 _wavetableIndex = wavetableIndex;
                 _noiseMacroData = new sbyte[6];
-                _subRows = new UgePatternRow[64];
+                _subPattern = new UgePatternRow[64];
 
-                ParseMacros(macros);
-
-                for (var i = 0; i < _subRows.Length; i++)
-                {
-                    _subRows[i] = new UgePatternRow(true);
-                }
+                ParseMacros(macros, panMacroOnChannel);
             }
 
             public UgeInstrument(string name, uint instrumentType,
@@ -92,7 +91,8 @@
                 List<FurInstrMacro> macros,
                 sbyte[] noiseMacroData,
                 byte freqSweepDirection = 0x1,
-                byte wavetableVol = 0x1
+                byte wavetableVol = 0x1,
+                int panMacroOnChannel = 1
                 )
             {
                 _name.Val = name;
@@ -103,7 +103,7 @@
                 _volSweepSpeed = volSweepSpeed;
                 _length = length;
 
-                ParseMacros(macros);
+                ParseMacros(macros, panMacroOnChannel);
 
                 if (_length < 64)
                     _lengthEnabled = true;
@@ -132,31 +132,140 @@
                     _noiseMacroData = noiseMacroData;
                 else
                     _noiseMacroData = new sbyte[6];
-                _subRows = new UgePatternRow[64];
-                for (var i = 0; i < _subRows.Length; i++)
-                {
-                    _subRows[i] = new UgePatternRow(true);
-                }
             }
 
-            private void ParseMacros(List<FurInstrMacro> macros)
+            private void ParseMacros(List<FurInstrMacro> macros, int panMacroOnChannel)
             {
+                _subPattern = new UgePatternRow[64];
+                for (var i = 0; i < _subPattern.Length; i++)
+                {
+                    _subPattern[i] = new UgePatternRow(true);
+                }
+
+                // Keep track of the macro containing the longest loop point
+                (int, int) highestJumpVal = (-9, -9); // Row, Loop Point
+
+                // Iterate through all of the macros and populate the subpattern
                 foreach (FurInstrMacro m in macros)
                 {
                     var code = m.GetMacroCode();
                     var data = m.GetMacroData();
+                    var loopPoint = (byte)m.GetLoopPoint();
                     //var type = m.GetMacroType();
+
+                    if (data.Count > 1)
+                        _subPatternEnabled = true;
 
                     switch (code)
                     {
+                        case FurFile.FurInstrMacroCode.PAN_L:
+
+                            /*
+                            // Update this channel's pan values
+                            ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
+
+                            // Update the pan value based on all of the GB Channels' current pan states
+                            ugeFXVal = 0x0;
+                            foreach (UgeGBChannelState chanState in ugeGBChannelStates)
+                            {
+                                ugeFXVal |= chanState.GetPan();
+                            }*/
+
+
+                            if (data.Count > 1)
+                            {
+                                for (var i = 0; i < data.Count; i++)
+                                {
+                                    var panVal = (byte)data[i];
+
+                                    // Check if bitA is set
+                                    bool rightSpeakerOn = (panVal & (1 << 0)) != 0;
+
+                                    // Check if bitB is set
+                                    bool leftSpeakerOn = (panVal & (1 << 1)) != 0;
+
+                                    int bitA = panMacroOnChannel - 1;     // Bit position A
+                                    int bitB = panMacroOnChannel + 3;     // Bit position B
+                                    
+                                    int panFinalVal = 0xFF;
+
+
+                                    // Toggle bit A if rightSpeakerOn is true
+                                    if (rightSpeakerOn)
+                                        panFinalVal |= (1 << bitA); // Set bit A
+                                    else
+                                        panFinalVal &= ~(1 << bitA); // Clear bit A
+
+
+                                    // Toggle bit B if leftSpeakerOn is true
+                                    if (leftSpeakerOn)
+                                        panFinalVal |= (1 << bitB); // Set bit B
+                                    else
+                                        panFinalVal &= ~(1 << bitB); // Clear bit B
+
+
+                                    _subPattern[i].SetEffect(UgeEffectTable.SET_PANNING, (byte)panFinalVal);
+                                }
+                            }
+                            break;
                         case FurFile.FurInstrMacroCode.VOL:
                             _initialVolume = (byte)data[0];
                             break;
+                        case FurFile.FurInstrMacroCode.ARP:
+                            if (data.Count > 1)
+                            {
+                                for (var i = 0; i < data.Count; i++)
+                                {
+                                    sbyte arpVal = (sbyte)data[i];
+
+                                    _subPattern[i].SetNote((UgeNoteTable)(0x24 + arpVal));
+                                }
+                            }
+                            break;
+                        case FurFile.FurInstrMacroCode.PITCH:
+                            if (data.Count > 1)
+                            {
+                                for (var i = 0; i < data.Count; i++)
+                                {
+                                    sbyte pitchVal = (sbyte)data[i];
+                                    UgeEffectTable pitchCmd;
+
+                                    if (pitchVal >= 0)
+                                    {
+                                        pitchCmd = UgeEffectTable.PORTAMENTO_UP;
+                                    } else
+                                    {
+                                        pitchCmd = UgeEffectTable.PORTAMENTO_DOWN;
+                                        pitchVal = (sbyte)(0xFF - (0xFF + pitchVal));
+                                    }
+
+                                    _subPattern[i].SetEffect(pitchCmd, (byte)(pitchVal / 8));
+                                }
+                            }
+                            break;
                         case FurFile.FurInstrMacroCode.DUTY:
                             _dutyCycle = (byte)data[0];
+
+                            if (data.Count > 1)
+                            {
+                                for (var i = 0; i < data.Count; i++)
+                                {
+                                    _subPattern[i].SetEffect(UgeEffectTable.SET_DUTY_CYCLE, (byte)(data[i] * 0x40));
+                                }
+                            }
                             break;
                     }
+
+                    if (data.Count > 1 && loopPoint < 0xFF)
+                    {
+                        if (highestJumpVal.Item2 < loopPoint)
+                            highestJumpVal = (data.Count - 1, loopPoint);
+                    }
                 }
+
+                // Set the macro's loop point based on the longest macro found was, if applicable
+                if (highestJumpVal != (-9, -9))
+                    _subPattern[highestJumpVal.Item1].SetJump(highestJumpVal.Item2 + 1);
             }
 
             public byte[] EmitBytes(UgeHeader header)
@@ -192,7 +301,7 @@
                         else
                         {
                             byteList.AddRange(BitConverter.GetBytes(_subPatternEnabled));
-                            foreach (UgePatternRow subRow in _subRows)
+                            foreach (UgePatternRow subRow in _subPattern)
                                 byteList.AddRange(subRow.EmitBytes(header));
                         }
 
@@ -233,7 +342,7 @@
                         else
                         {
                             byteList.AddRange(BitConverter.GetBytes(_subPatternEnabled));
-                            foreach (UgePatternRow subRow in _subRows)
+                            foreach (UgePatternRow subRow in _subPattern)
                                 byteList.AddRange(subRow.EmitBytes(header));
                         }
 
@@ -270,7 +379,7 @@
                         else
                         {
                             byteList.AddRange(BitConverter.GetBytes(_subPatternEnabled));
-                            foreach (UgePatternRow subRow in _subRows)
+                            foreach (UgePatternRow subRow in _subPattern)
                                 byteList.AddRange(subRow.EmitBytes(header));
                         }
 
@@ -285,6 +394,11 @@
                 }
 
                 return byteList.ToArray();
+            }
+
+            public void SetDutyCycle(byte value)
+            {
+                _dutyCycle = value;
             }
         }
     }

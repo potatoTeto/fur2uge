@@ -1,6 +1,6 @@
-﻿using static Fur2Uge.UgeFile;
+﻿using static fur2Uge.UgeFile;
 
-namespace Fur2Uge
+namespace fur2Uge
 {
     public class UgeSongPattern
     {

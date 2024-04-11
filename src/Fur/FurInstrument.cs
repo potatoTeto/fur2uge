@@ -1,7 +1,4 @@
-﻿
-using System;
-
-namespace Fur2Uge
+﻿namespace fur2Uge
 {
     public class FurInstrument
     {

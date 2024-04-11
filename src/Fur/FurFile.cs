@@ -1,7 +1,7 @@
 ﻿using System.IO.Compression;
 using System.Text;
 
-namespace Fur2Uge
+namespace fur2Uge
 {
     public partial class FurFile
     {
@@ -702,14 +702,6 @@ namespace Fur2Uge
                                     stopLoop = true; // redundant failsafe
                                     break;
                             }
-
-                            /*
-                            // Eat the rest of the garbage data, if applicable.
-                            while (blockLen > 0)
-                            {
-                                reader.ReadByte();
-                                blockLen--;
-                            }*/
                         }
                         thisInstr.SetID(_furModuleInfo.GlobalInstruments.Count);
                         _furModuleInfo.GlobalInstruments.Add(thisInstr);

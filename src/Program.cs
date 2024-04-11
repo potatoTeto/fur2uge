@@ -1,12 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Channels;
-using static Fur2Uge.FurFile;
-using static Fur2Uge.UgeFile;
+using static fur2Uge.FurFile;
+using static fur2Uge.UgeFile;
 
-namespace Fur2Uge
+namespace fur2Uge
 {
     public class Program
     {
@@ -32,7 +28,8 @@ namespace Fur2Uge
                 exists = System.IO.Directory.Exists(Path.GetDirectoryName(fOut));
                 if (!exists)
                     System.IO.Directory.CreateDirectory(Path.GetDirectoryName(fOut));
-            } else
+            }
+            else
             {
                 throw new Exception("Please provide an input and output path.\n\nUsage:\nfur2uge --i <input>.fur --o <output>.fur");
             }
@@ -181,7 +178,7 @@ namespace Fur2Uge
             List<FurInstrument> furNoiseInstruments = new List<FurInstrument>();
             Dictionary<int, List<byte>> seenVolumes = new Dictionary<int, List<byte>>();
             Dictionary<(int, byte), int> clonedVolInstrumentLookup = new Dictionary<(int, byte), int>();  // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
-            for(var i = 0; i < moduleInfo.GlobalInstruments.Count; i++)
+            for (var i = 0; i < moduleInfo.GlobalInstruments.Count; i++)
             {
                 seenVolumes[i] = new List<byte>();
             }
@@ -213,7 +210,7 @@ namespace Fur2Uge
                         int volVal = thisRowData.GetVolume();
                         if (volVal >= 0)
                             ugeGBChannelStates[chanID].SetVol((byte)volVal);
-                        
+
                         List<byte> furAllChannelFxColumns = thisRowData.GetEffectData();
 
                         // Also declaring some variables, for later...
@@ -302,7 +299,7 @@ namespace Fur2Uge
                                         }
                                         duplicateCheckingIndex++;
                                     }
-                                    
+
                                     if (!duplicateInstr)
                                     {
                                         FurInstrument instr = moduleInfo.GlobalInstruments[instrVal];
@@ -311,12 +308,13 @@ namespace Fur2Uge
                                         if (volVal >= 0 && autoVolumeDetection)
                                         {
                                             if (gbEnvVol != volVal)
-                                                if (!seenVolumes[instrID].Contains((byte)volVal)) 
+                                                if (!seenVolumes[instrID].Contains((byte)volVal))
                                                     newVolInstr = true;
                                         }
 
                                         // Because this envelope * volume column does not match anything else we've played before, we need to create a modified copy of the instrument that contains the new volume value.
-                                        if (newVolInstr) {
+                                        if (newVolInstr)
+                                        {
                                             instr = moduleInfo.GlobalInstruments[instrVal].ShallowCopy();
                                             int newVolVal;
                                             if (volVal > 0)
@@ -339,13 +337,15 @@ namespace Fur2Uge
                                         furPulseInstruments.Add(instr);
                                         instrVal = furPulseInstruments.Count - 1;
                                         ugeGBChannelStates[chanID].SetCurrInstrID(instrVal);
-                                    } else
+                                    }
+                                    else
                                     {
                                         try
                                         {
                                             instrVal = clonedVolInstrumentLookup[(furPulseInstruments[ugeGBChannelStates[chanID].GetCurrInstrID()].GetID(), chanCurrVol)];
                                         }
-                                        catch (KeyNotFoundException) {
+                                        catch (KeyNotFoundException)
+                                        {
                                         }
                                     }
                                     break;
@@ -577,7 +577,7 @@ namespace Fur2Uge
                 {
                     var data = m.GetMacroData();
 
-                    switch(m.GetMacroCode())
+                    switch (m.GetMacroCode())
                     {
                         case FurInstrMacroCode.PITCH:
 

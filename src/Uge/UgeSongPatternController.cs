@@ -1,5 +1,5 @@
 ﻿
-namespace Fur2Uge
+namespace fur2Uge
 {
     public class UgeSongPatternController
     {
@@ -43,7 +43,7 @@ namespace Fur2Uge
 
             byteList.AddRange(BitConverter.GetBytes((uint)_patterns.Count));
 
-            foreach(UgeSongPattern pattern in _patterns.Values)
+            foreach (UgeSongPattern pattern in _patterns.Values)
             {
                 byteList.AddRange(pattern.EmitBytes(header));
             }
@@ -74,7 +74,8 @@ namespace Fur2Uge
                 try
                 {
                     _patterns[orderPosition].SetNote(row, note);
-                }catch (KeyNotFoundException)
+                }
+                catch (KeyNotFoundException)
                 {
                     throw new Exception(string.Format("Error: SetNote({0}, {1}). Please file an issue to the developer on the fur2uge GitHub: This should not happen!", row, note));
                 }

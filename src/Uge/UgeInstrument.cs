@@ -1,7 +1,4 @@
-﻿using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace Fur2Uge
+﻿namespace fur2Uge
 {
     public partial class UgeFile
     {
@@ -159,19 +156,6 @@ namespace Fur2Uge
                     switch (code)
                     {
                         case FurFile.FurInstrMacroCode.PAN_L:
-
-                            /*
-                            // Update this channel's pan values
-                            ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
-
-                            // Update the pan value based on all of the GB Channels' current pan states
-                            ugeFXVal = 0x0;
-                            foreach (UgeGBChannelState chanState in ugeGBChannelStates)
-                            {
-                                ugeFXVal |= chanState.GetPan();
-                            }*/
-
-
                             if (data.Count > 1)
                             {
                                 for (var i = 0; i < data.Count; i++)
@@ -186,9 +170,8 @@ namespace Fur2Uge
 
                                     int bitA = panMacroOnChannel - 1;     // Bit position A
                                     int bitB = panMacroOnChannel + 3;     // Bit position B
-                                    
-                                    int panFinalVal = 0xFF;
 
+                                    int panFinalVal = 0xFF;
 
                                     // Toggle bit A if rightSpeakerOn is true
                                     if (rightSpeakerOn)
@@ -202,7 +185,6 @@ namespace Fur2Uge
                                         panFinalVal |= (1 << bitB); // Set bit B
                                     else
                                         panFinalVal &= ~(1 << bitB); // Clear bit B
-
 
                                     _subPattern[i].SetEffect(UgeEffectTable.SET_PANNING, (byte)panFinalVal);
                                 }
@@ -233,7 +215,8 @@ namespace Fur2Uge
                                     if (pitchVal >= 0)
                                     {
                                         pitchCmd = UgeEffectTable.PORTAMENTO_UP;
-                                    } else
+                                    }
+                                    else
                                     {
                                         pitchCmd = UgeEffectTable.PORTAMENTO_DOWN;
                                         pitchVal = (sbyte)(0xFF - (0xFF + pitchVal));

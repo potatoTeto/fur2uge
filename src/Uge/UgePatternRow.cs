@@ -1,4 +1,4 @@
-﻿namespace Fur2Uge
+﻿namespace fur2Uge
 {
     public partial class UgeFile
     {
@@ -53,7 +53,7 @@
                 InstrumentValue = (byte)(instrumentIndex + 1);
             }
 
-            internal void SetJump(int loopPoint)
+            public void SetJump(int loopPoint)
             {
                 JumpCmdVal = (byte)loopPoint;
             }

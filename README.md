@@ -66,4 +66,5 @@ There are no dependencies required, beyond .NET and C#: Clone the project and bu
 
 ## License
 
-MIT
+fur2uge Source Code - MIT
+All demo songs - All rights reserved

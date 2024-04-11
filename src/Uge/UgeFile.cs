@@ -1,7 +1,6 @@
 ﻿using System.Text;
-using System.Threading.Channels;
 
-namespace Fur2Uge
+namespace fur2Uge
 {
     public enum UgeNoteTable
     {
@@ -189,7 +188,7 @@ namespace Fur2Uge
                 outData.AddRange(wavetable.EmitBytes(Header));
 
             outData.AddRange(_ugeSongPatternController.EmitBytes(Header));
-            
+
             outData.AddRange(_ugeSongOrderManager.EmitBytes(Header));
 
             foreach (UgeRoutine routine in _ugeRoutines)

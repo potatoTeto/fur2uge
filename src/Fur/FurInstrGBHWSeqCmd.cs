@@ -1,6 +1,6 @@
-﻿using static Fur2Uge.FurFile;
+﻿using static fur2Uge.FurFile;
 
-namespace Fur2Uge
+namespace fur2Uge
 {
     public class FurInstrGBHWSeqCmd
     {

@@ -88,7 +88,7 @@ namespace Fur2Uge
         {
             var newInst = (FurInstrument)this.MemberwiseClone();
 
-            newInst._furInstrGB = new FurInstrGB(2, 1, 15, 2, 0x0, 0x0, new List<FurInstrGBHWSeqCmd>());
+            newInst._furInstrGB = new FurInstrGB(2, 1, 15, 2, 0x0, 0x0, this.GetInstrGB().GetHWSeq());
 
             return newInst;
         }

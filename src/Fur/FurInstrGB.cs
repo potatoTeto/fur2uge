@@ -30,9 +30,9 @@ namespace Fur2Uge
             return (_gbEnvLen, _gbEnvDir, _gbEnvVol, _gbSndLen, _gbFlags, _gbHWSeqLen, _gbHWSeqCmds);
         }
 
-        public (byte, List<FurInstrGBHWSeqCmd>) GetHWSeq()
+        public List<FurInstrGBHWSeqCmd> GetHWSeq()
         {
-            return (_gbHWSeqLen, _gbHWSeqCmds);
+            return _gbHWSeqCmds;
         }
 
         public byte GetEnvVol()

@@ -82,11 +82,28 @@ namespace fur2Uge
                 }
             }
 
+            int ugeVersion = 6;
+            if (config["u"] != null)
+            {
+                try
+                {
+                    int vr = Int32.Parse(config["u"]);
+                    if (ugeVersion >= 0 && ugeVersion <= 6)
+                        ugeVersion = vr;
+                    else
+                        throw new Exception(string.Format("Invalid argument for uge format version: --u {0}.\n\nPlease specify a version number between 0 and 6.\nAborting...", ugeVersion));
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine($"Unable to parse '{config["a"]}'");
+                }
+            }
+
             // Read the .fur into memory
             FurFile furFile = new FurFile(fIn, dumpCompressedFur, decompressedFurPath);
 
             // Prepare a .uge data tree to modify
-            UgeFile ugeFile = new UgeFile();
+            UgeFile ugeFile = new UgeFile((uint)ugeVersion);
 
             // Parse the .fur file, and then populate its data into the .uge data tree we created
             ParseFur(furFile, ugeFile, autoVolumeDetection, panMacroOnChannel);

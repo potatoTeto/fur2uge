@@ -23,6 +23,8 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 
 ``--v <0 or 1>`` - If **Disabled (0)**, a new instrument will **not** be made when considering the .fur's volume column. Please keep in mind that .uge limits users to 15 instruments per channel type (Duty/Wave/Noise). By default, this is **Enabled (1)**.
 
+``--u <VersionNum 0-6>`` - Specify the output .uge Version. (Versions <=5 do not support Sub-patterns/Furnace macros!)
+
 ## Caveats
 - All patterns must have 64 rows. They cannot be increased or decreased. However, cutting the pattern short with Dxx and Bxx is allowed.
 - No more than 15 different unique instruments may be played per channel (Pulse 1 & 2 combined may only have 15 instruments). A single instrument playing on all 4 channels will count as 3 instruments (Pulse, Wave, Noise).

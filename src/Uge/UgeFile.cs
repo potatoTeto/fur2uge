@@ -131,9 +131,9 @@ namespace fur2Uge
 
         public UgeHeader Header;
 
-        public UgeFile()
+        public UgeFile(uint ugeVersion = 6)
         {
-            Header.VersionNum = 6;
+            Header.VersionNum = ugeVersion;
             Header.SongName.Val = string.Empty;
             Header.SongArtist.Val = string.Empty;
             Header.SongComment.Val = string.Empty;

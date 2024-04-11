@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Channels;
 using static Fur2Uge.FurFile;
 using static Fur2Uge.UgeFile;
 
@@ -91,19 +92,82 @@ namespace Fur2Uge
             // Set the project speed
             ugeFile.SetSpeed(furSong.Speed1);
 
-            // Populate the song's order table (For the first chip only [This MUST be GB chip!])
-            // Might end up optimizing this in the future...
-            var orderTableHeight = furSong.OrderTable.GetLength(1);
-            for (var i = 0; i < orderTableHeight; i++)
+
+
+
+            /// Create 4 channels to simulate the song as we parse it
+            UgeGBChannelState[] ugeGBChannelStates = new UgeGBChannelState[4];
+            for (var i = 0; i < ugeGBChannelStates.Length; i++)
+                ugeGBChannelStates[i] = new UgeGBChannelState(i);
+
+
+
+
+            /// Sort the Furnace unique-per-channel order table to accomodate for hUGETracker's global pattern layout
+            // Input a uge Pattern Index, get the fur pattern index
+            Dictionary<int, int> furPointerLookup = new Dictionary<int, int>();
+
+            // Input a fur Pattern Index, get the uge pattern index
+            Dictionary<int, int> ugePointerLookup = new Dictionary<int, int>();
+
+            int[,] ugeOrderTable = new int[furSong.OrderTable.GetLength(0), furSong.OrderTable.GetLength(1)];
+
+            // Populate the table with unique indices
+            for (int chanID = 0; chanID < furSong.OrderTable.GetLength(0); chanID++)
             {
-                ugeFile.AddNewOrderRow(1);
+                // Unique offset for each row, to differentiate them more easily during conversion
+                int pointerOffset = (chanID + 1) * 0x1000;
+                for (int row = 0; row < furSong.OrderTable.GetLength(1); row++)
+                {
+                    int furPointer = furSong.OrderTable[chanID, row] + pointerOffset;
+                    if (!ugePointerLookup.ContainsKey(furPointer))
+                    {
+                        // ugePointer value will increment from 0, based on how many there are
+                        int ugePointer = ugePointerLookup.Count;
+                        ugePointerLookup[furPointer] = ugePointer;
+                        furPointerLookup[ugePointer] = furPointer;
+                    }
+                    ugeOrderTable[chanID, row] = ugePointerLookup[furPointer];
+                }
             }
+
+            // Populate the Uge Pattern Tables
+            for (int rowIndex = 0; rowIndex < ugeOrderTable.GetLength(1); rowIndex++)
+            {
+                for (int chanID = 0; chanID < ugeOrderTable.GetLength(0); chanID++)
+                {
+                    int ugePointer = ugeOrderTable[chanID, rowIndex];
+                    int furPointer = furPointerLookup[ugePointer];
+
+
+                    int targChannel = ((furPointer & 0xF000) >> 12) - 1;
+                    int furPatternID = (furPointer & 0x7);
+
+
+                    //ugeGBChannelStates[targChannel].AddUgePattern(ugePointer);
+
+                    //ugeFile.AddNewOrderRow(1);
+
+
+
+
+                    //Console.Write(furPointer.ToString("X") + "\t");
+                    Console.Write(ugePointer.ToString("X") + "\t");
+
+
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine("Done");
+
+
+            var orderTableHeight = ugeOrderTable.GetLength(1);
+
 
             // Keep track of all the new instruments we define, on a per channel basis (Pulse 1 & 2 count as the same channel in this case)
             List<FurInstrument> furPulseInstruments = new List<FurInstrument>();
             List<FurInstrument> furWaveInstruments = new List<FurInstrument>();
             List<FurInstrument> furNoiseInstruments = new List<FurInstrument>();
-            UgeGBChannelState[] ugeGBChannelStates = new UgeGBChannelState[4];
             Dictionary<int, List<byte>> seenVolumes = new Dictionary<int, List<byte>>();
             Dictionary<(int, byte), int> clonedVolInstrumentLookup = new Dictionary<(int, byte), int>();  // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
             for(var i = 0; i < moduleInfo.GlobalInstruments.Count; i++)
@@ -111,8 +175,6 @@ namespace Fur2Uge
                 seenVolumes[i] = new List<byte>();
             }
 
-            for (var i = 0; i < ugeGBChannelStates.Length; i++)
-                ugeGBChannelStates[i] = new UgeGBChannelState(i);
 
             for (int orderRow = 0; orderRow < orderTableHeight; orderRow++)
             {

@@ -1,5 +1,7 @@
 ﻿
 
+
+
 namespace Fur2Uge
 {
     public class UgeGBChannelState

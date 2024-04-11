@@ -14,7 +14,7 @@ https://github.com/potatoTeto/fur2uge/releases
 ### Casual Usage
 Place all of your prepared .fur files in the ``/input/`` folder, located at the same location that the program is. Double-click on ``convert.bat`` to get the files in the ``/output/`` folder.
 ### Terminal Usage
-``Fur2Uge --i <input>.fur --o <output>.uge``
+``fur2Uge --i <input>.fur --o <output>.uge``
 
 ### Command Line Arguments
 ``--d <DPath>`` - Output the zlib-decompressed .fur file, too. If ``<DPath>`` is not specified, the program will output the decompressed .fur to the output .uge file's directory.

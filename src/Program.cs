@@ -93,16 +93,6 @@ namespace Fur2Uge
             ugeFile.SetSpeed(furSong.Speed1);
 
 
-
-
-            /// Create 4 channels to simulate the song as we parse it
-            UgeGBChannelState[] ugeGBChannelStates = new UgeGBChannelState[4];
-            for (var i = 0; i < ugeGBChannelStates.Length; i++)
-                ugeGBChannelStates[i] = new UgeGBChannelState(i);
-
-
-
-
             /// Sort the Furnace unique-per-channel order table to accomodate for hUGETracker's global pattern layout
             // Input a uge Pattern Index, get the fur pattern index
             Dictionary<int, int> furPointerLookup = new Dictionary<int, int>();
@@ -130,6 +120,7 @@ namespace Fur2Uge
                     ugeOrderTable[chanID, row] = ugePointerLookup[furPointer];
                 }
             }
+            ugeFile.SetOrderTable(ugeOrderTable);
 
             // Populate the Uge Pattern Tables
             for (int rowIndex = 0; rowIndex < ugeOrderTable.GetLength(1); rowIndex++)
@@ -137,32 +128,11 @@ namespace Fur2Uge
                 for (int chanID = 0; chanID < ugeOrderTable.GetLength(0); chanID++)
                 {
                     int ugePointer = ugeOrderTable[chanID, rowIndex];
-                    int furPointer = furPointerLookup[ugePointer];
-
-
-                    int targChannel = ((furPointer & 0xF000) >> 12) - 1;
-                    int furPatternID = (furPointer & 0x7);
-
-
-                    //ugeGBChannelStates[targChannel].AddUgePattern(ugePointer);
-
-                    //ugeFile.AddNewOrderRow(1);
-
-
-
-
-                    //Console.Write(furPointer.ToString("X") + "\t");
-                    Console.Write(ugePointer.ToString("X") + "\t");
-
-
+                    ugeFile.AppendSongPattern(ugePointer);
                 }
-                Console.WriteLine();
             }
-            Console.WriteLine("Done");
-
 
             var orderTableHeight = ugeOrderTable.GetLength(1);
-
 
             // Keep track of all the new instruments we define, on a per channel basis (Pulse 1 & 2 count as the same channel in this case)
             List<FurInstrument> furPulseInstruments = new List<FurInstrument>();
@@ -175,13 +145,22 @@ namespace Fur2Uge
                 seenVolumes[i] = new List<byte>();
             }
 
+            /// Create 4 channels to simulate the song as we parse it
+            UgeGBChannelState[] ugeGBChannelStates = new UgeGBChannelState[4];
+            for (var i = 0; i < ugeGBChannelStates.Length; i++)
+                ugeGBChannelStates[i] = new UgeGBChannelState(i);
 
             for (int orderRow = 0; orderRow < orderTableHeight; orderRow++)
             {
                 for (int chanID = 0; chanID < 4; chanID++)
                 {
-                    int orderID = furSong.OrderTable[chanID, orderRow];
-                    FurPatternData thisPattern = furSong.Channels[chanID].GetPattern(orderID);
+
+                    int ugePatternID = ugeOrderTable[chanID, orderRow];
+                    int furPointer = furPointerLookup[ugePatternID];
+                    //int targChannel = ((furPointer & 0xF000) >> 12) - 1;
+                    int furPatternID = (furPointer & 0x7);
+
+                    FurPatternData thisPattern = furSong.Channels[chanID].GetPattern(furPatternID);
                     List<FurPatternRowData> patRowData = thisPattern.GetAllRowData();
 
                     /// Read all the pattern data and store it into the uge file, in order.
@@ -206,7 +185,7 @@ namespace Fur2Uge
                         // Notes first
                         if (noteVal >= 0)
                         {
-                            patCon.SetNote((GBChannel)chanID, (byte)orderID, rowIndex, FurNoteToUgeNote(noteVal));
+                            patCon.SetNote((GBChannel)chanID, (byte)ugePatternID, rowIndex, FurNoteToUgeNote(noteVal));
                         }
 
                         // Now instruments
@@ -364,12 +343,12 @@ namespace Fur2Uge
                                     }
                                     break;
                             }
-                            patCon.SetInstrument((GBChannel)chanID, (byte)orderID, rowIndex, instrVal);
+                            patCon.SetInstrument((GBChannel)chanID, (byte)ugePatternID, rowIndex, instrVal);
                         }
 
                         // Now copy the volume column (which might or might not get overwritten if an effect is present)
                         if (volVal >= 0 && !newVolInstr && ugeGBChannelStates[chanID].GetVol() != volVal)
-                            patCon.SetEffect((GBChannel)chanID, (byte)orderID, rowIndex, UgeEffectTable.SET_VOL, (byte)volVal);
+                            patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, UgeEffectTable.SET_VOL, (byte)volVal);
 
                         // Finally, copy all of the effect columns for this channel's row
 
@@ -495,7 +474,7 @@ namespace Fur2Uge
                         }
 
                         if (ugeFXVal >= 0 && ugeFxCmd != null)
-                            patCon.SetEffect((GBChannel)chanID, (byte)orderID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                            patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
 
                     }
                 }

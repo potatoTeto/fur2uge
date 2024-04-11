@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Threading.Channels;
 
 namespace Fur2Uge
 {
@@ -45,13 +46,13 @@ namespace Fur2Uge
     public partial class UgeFile
     {
         private List<byte> outData;
-        private UgeInstrument[] ugeDutyInstruments;
-        private UgeInstrument[] ugeWaveInstruments;
-        private UgeInstrument[] ugeNoiseInstruments;
-        private UgeWavetable[] ugeWavetables;
-        private UgeSongPatternController ugeSongPatternController;
-        private UgeGBChannel[] ugeGBChannels;
-        private UgeRoutine[] ugeRoutines;
+        private UgeInstrument[] _ugeDutyInstruments;
+        private UgeInstrument[] _ugeWaveInstruments;
+        private UgeInstrument[] _ugeNoiseInstruments;
+        private UgeWavetable[] _ugeWavetables;
+        private UgeSongPatternController _ugeSongPatternController;
+        private UgeSongOrderManager _ugeSongOrderManager;
+        private UgeRoutine[] _ugeRoutines;
 
         public struct shortstring
         {
@@ -138,95 +139,60 @@ namespace Fur2Uge
             Header.SongArtist.Val = string.Empty;
             Header.SongComment.Val = string.Empty;
 
-            ugeDutyInstruments = new UgeInstrument[15];
-            ugeWaveInstruments = new UgeInstrument[15];
-            ugeNoiseInstruments = new UgeInstrument[15];
-            for (int i = 0; i < ugeDutyInstruments.Length; i++)
+            _ugeDutyInstruments = new UgeInstrument[15];
+            _ugeWaveInstruments = new UgeInstrument[15];
+            _ugeNoiseInstruments = new UgeInstrument[15];
+            for (int i = 0; i < _ugeDutyInstruments.Length; i++)
             {
-                ugeDutyInstruments[i] = new UgeInstrument(0);
-                ugeWaveInstruments[i] = new UgeInstrument(1);
-                ugeNoiseInstruments[i] = new UgeInstrument(2);
+                _ugeDutyInstruments[i] = new UgeInstrument(0);
+                _ugeWaveInstruments[i] = new UgeInstrument(1);
+                _ugeNoiseInstruments[i] = new UgeInstrument(2);
             }
 
-            ugeWavetables = new UgeWavetable[16];
-            for (int i = 0; i < ugeWavetables.Length; i++)
+            _ugeWavetables = new UgeWavetable[16];
+            for (int i = 0; i < _ugeWavetables.Length; i++)
             {
-                ugeWavetables[i] = new UgeWavetable();
+                _ugeWavetables[i] = new UgeWavetable();
             }
 
-            ugeGBChannels = new UgeGBChannel[4];
-            for (byte i = 0; i < ugeGBChannels.Length; i++)
-            {
-                ugeGBChannels[i] = new UgeGBChannel(i);
-            }
+            _ugeSongPatternController = new UgeSongPatternController(7, 1, Header, false);
+            _ugeSongOrderManager = new UgeSongOrderManager();
 
-            ugeSongPatternController = new UgeSongPatternController(7, 1, Header, false, ugeGBChannels);
-
-            ugeRoutines = new UgeRoutine[16];
-            for (int i = 0; i < ugeRoutines.Length; i++)
+            _ugeRoutines = new UgeRoutine[16];
+            for (int i = 0; i < _ugeRoutines.Length; i++)
             {
-                ugeRoutines[i] = new UgeRoutine();
+                _ugeRoutines[i] = new UgeRoutine();
             }
         }
 
         public void SetWavetable(int index, byte[] data)
         {
-            ugeWavetables[index] = new UgeWavetable(data);
-        }
-
-        public void AddNewOrderRow(int iterations)
-        {
-            while (iterations > 0)
-            {
-                //ugeSongPatternController.AddNewPatternRow(false);
-                for (byte i = 0; i < ugeGBChannels.Length; i++)
-                {
-                    ugeGBChannels[i].AddNewOrderRow();
-                    ugeGBChannels[i].AddNewPattern(1, false);
-                }
-                iterations--;
-            }
+            _ugeWavetables[index] = new UgeWavetable(data);
         }
 
         public UgeSongPatternController GetUgeSongPatternController()
         {
-            return ugeSongPatternController;
+            return _ugeSongPatternController;
         }
 
         public void Write(string fOut)
         {
             outData = new List<byte>();
             outData.AddRange(Header.EmitBytes());
-            foreach (UgeInstrument dutyInsts in ugeDutyInstruments)
+            foreach (UgeInstrument dutyInsts in _ugeDutyInstruments)
                 outData.AddRange(dutyInsts.EmitBytes(Header));
-            foreach (UgeInstrument waveInsts in ugeWaveInstruments)
+            foreach (UgeInstrument waveInsts in _ugeWaveInstruments)
                 outData.AddRange(waveInsts.EmitBytes(Header));
-            foreach (UgeInstrument noiseInsts in ugeNoiseInstruments)
+            foreach (UgeInstrument noiseInsts in _ugeNoiseInstruments)
                 outData.AddRange(noiseInsts.EmitBytes(Header));
-            foreach (UgeWavetable wavetable in ugeWavetables)
+            foreach (UgeWavetable wavetable in _ugeWavetables)
                 outData.AddRange(wavetable.EmitBytes(Header));
 
-            outData.AddRange(ugeSongPatternController.EmitPatternHeaderBytes(Header));
-            uint totalPatternCount = 0;
-            foreach (UgeGBChannel channel in ugeGBChannels)
-            {
-                totalPatternCount += channel.GetPatternCount();
-            }
-            outData.AddRange(BitConverter.GetBytes(totalPatternCount));
+            outData.AddRange(_ugeSongPatternController.EmitBytes(Header));
+            
+            outData.AddRange(_ugeSongOrderManager.EmitBytes(Header));
 
-            for (var i = 0; i < totalPatternCount; i++)
-            {
-                UgeGBChannel channel = ugeGBChannels[i % 4];
-                outData.AddRange(channel.EmitPatternBytes(Header, i / 4));
-            }
-
-            foreach (UgeGBChannel channel in ugeGBChannels)
-            {
-                UgeSongOrderManager songOrderManager = channel.GetSongOrderManager();
-                outData.AddRange(songOrderManager.EmitBytes(Header));
-            }
-
-            foreach (UgeRoutine routine in ugeRoutines)
+            foreach (UgeRoutine routine in _ugeRoutines)
                 outData.AddRange(routine.EmitBytes(Header));
 
             File.WriteAllBytes(fOut, outData.ToArray());
@@ -234,14 +200,14 @@ namespace Fur2Uge
 
         public void SetSpeed(int value)
         {
-            ugeSongPatternController.SetInitialTicksPerRow((uint)value);
+            _ugeSongPatternController.SetInitialTicksPerRow((uint)value);
         }
 
         public void SetPulseInstr(int instrIndex, UgeInstrument ugePulse)
         {
             try
             {
-                ugeDutyInstruments[instrIndex] = ugePulse;
+                _ugeDutyInstruments[instrIndex] = ugePulse;
             }
             catch (IndexOutOfRangeException)
             {
@@ -253,7 +219,7 @@ namespace Fur2Uge
         {
             try
             {
-                ugeNoiseInstruments[instrIndex] = ugeNoise;
+                _ugeNoiseInstruments[instrIndex] = ugeNoise;
             }
             catch (IndexOutOfRangeException)
             {
@@ -265,12 +231,22 @@ namespace Fur2Uge
         {
             try
             {
-                ugeWaveInstruments[instrIndex] = ugeWave;
+                _ugeWaveInstruments[instrIndex] = ugeWave;
             }
             catch (IndexOutOfRangeException)
             {
                 throw new Exception("You have too many Wave instruments! Limit is 15; Aborting...");
             }
+        }
+
+        public void SetOrderTable(int[,] ugeOrderTable)
+        {
+            _ugeSongOrderManager.SetOrderTable(ugeOrderTable);
+        }
+
+        public void AppendSongPattern(int ugeOrderID)
+        {
+            _ugeSongPatternController.AppendSongPattern(ugeOrderID);
         }
     }
 }

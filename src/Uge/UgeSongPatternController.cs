@@ -1,4 +1,5 @@
-﻿namespace Fur2Uge
+﻿
+namespace Fur2Uge
 {
     public class UgeSongPatternController
     {
@@ -6,22 +7,22 @@
         private bool _timerBasedTempoEnabled;
         private uint _timerBasedTempoDivider;
         private UgeFile.UgeHeader _header;
-        private UgeGBChannel[] _gbChannels;
+        private Dictionary<int, UgeSongPattern> _patterns;
 
-        public UgeSongPatternController(byte initialTicksPerRow, byte numOrderRows, UgeFile.UgeHeader header, bool isSubpattern, UgeGBChannel[] gbChannels)
+        public UgeSongPatternController(byte initialTicksPerRow, byte numOrderRows, UgeFile.UgeHeader header, bool isSubpattern)
         {
             _initialTicksPerRow = initialTicksPerRow;
-
-            _gbChannels = gbChannels;
-
-            foreach (var channel in _gbChannels)
-            {
-                channel.AddNewPattern(numOrderRows, isSubpattern);
-            }
 
             _header = header;
             _timerBasedTempoEnabled = false;
             _timerBasedTempoDivider = 0;
+
+            _patterns = new Dictionary<int, UgeSongPattern>();
+        }
+
+        public void AppendSongPattern(int patternIndex)
+        {
+            _patterns[patternIndex] = new UgeSongPattern((uint)patternIndex, false);
         }
 
         public void SetInitialTicksPerRow(uint value)
@@ -29,7 +30,7 @@
             _initialTicksPerRow = value;
         }
 
-        public byte[] EmitPatternHeaderBytes(UgeFile.UgeHeader header)
+        public byte[] EmitBytes(UgeFile.UgeHeader header)
         {
             List<byte> byteList = new List<byte>();
             byteList.AddRange(BitConverter.GetBytes(_initialTicksPerRow));
@@ -39,12 +40,27 @@
                 byteList.AddRange(BitConverter.GetBytes(_timerBasedTempoEnabled));
                 byteList.AddRange(BitConverter.GetBytes(_timerBasedTempoDivider));
             }
+
+            byteList.AddRange(BitConverter.GetBytes((uint)_patterns.Count));
+
+            foreach(UgeSongPattern pattern in _patterns.Values)
+            {
+                byteList.AddRange(pattern.EmitBytes(header));
+            }
+
             return byteList.ToArray();
         }
 
         public void SetEffect(GBChannel channel, byte orderPosition, int row, UgeEffectTable effect, byte effectData)
         {
-            _gbChannels[(int)channel].GetPatterns()[orderPosition].SetEffect(row, effect, effectData);
+            try
+            {
+                _patterns[orderPosition].SetEffect(row, effect, effectData);
+            }
+            catch (KeyNotFoundException)
+            {
+                throw new Exception(string.Format("Error: SetEffect({0}, {1}, {2}). Please file an issue to the developer on the fur2uge GitHub: This should not happen!", row, effect, effectData));
+            }
         }
 
         public void SetNote(GBChannel channel, byte orderPosition, int row, UgeNoteTable note)
@@ -55,28 +71,26 @@
             {
                 if (channel == GBChannel.NOISE)
                     note += 19; // Remap the pitch to be 1:1 with (or at least closer to) Furnace's noise freq table
-                _gbChannels[(int)channel].GetPatterns()[orderPosition].SetNote(row, note);
+                try
+                {
+                    _patterns[orderPosition].SetNote(row, note);
+                }catch (KeyNotFoundException)
+                {
+                    throw new Exception(string.Format("Error: SetNote({0}, {1}). Please file an issue to the developer on the fur2uge GitHub: This should not happen!", row, note));
+                }
             }
         }
 
         public void SetInstrument(GBChannel channel, byte orderPosition, int row, int instrumentIndex)
         {
-            _gbChannels[(int)channel].GetPatterns()[orderPosition].SetInstrument(row, instrumentIndex);
-        }
-        /*
-         
-         
-        public void AddNewPatternRow(bool isSubpattern)
-        {
-            var i = 0;
-            foreach(var channel in _gbChannels)
+            try
             {
-                var _patterns = channel.GetPatterns();
-                var thisPattern = new UgeSongPattern((uint)(_patterns.Count + i), isSubpattern);
-                _patterns.Add(thisPattern);
-                i++;
+                _patterns[orderPosition].SetInstrument(row, instrumentIndex);
+            }
+            catch (KeyNotFoundException)
+            {
+                throw new Exception(string.Format("Error: SetInstrument({0}, {1}). Please file an issue to the developer on the fur2uge GitHub: This should not happen!", row, instrumentIndex));
             }
         }
-         */
     }
 }

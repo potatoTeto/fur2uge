@@ -1,5 +1,5 @@
 # fur2uge
-## Convert Furnace .uge modules into hUGETracker .uge modules
+## Convert Furnace .fur modules into hUGETracker .uge modules
 fur2uge is a conversion tool for Furnace .uge modules to hUGETracker .uge. The tool is designed to allow [Furnace](https://github.com/tildearrow/furnace) users to convert their project files to [hUGETracker](https://github.com/SuperDisk/hUGETracker) project files, so that they can be exported for homebrew use (including [GB Studio](https://www.gbstudio.dev/)).
 
 # Download

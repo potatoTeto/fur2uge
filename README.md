@@ -35,6 +35,7 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 - No subsongs are allowed.
 - Messing with Virtual Tempo/Base Tempo is not considered. Only use Speed (For now… Unless I figure out the song speed/tempo math between both trackers)
 - Volume may only be defined if an effect is not on the same row for the channel. Axy (Volume Slide) is an exception. Both Volume and Axy may only be used whenever a note is played. This is to ensure that audio output is converted accurately and as expected.
+- I did a few hacks to make the volume column work: hUGETracker does not natively have a volume column, so I made the program automatically create instruments if the context requires a lower/higher volume that hasn't been defined yet... Don't go crazy w/the volume column, or you may hit the 15-instrument limit very quickly!
 ---
 Macros are partially supported, with a few more things to note:
 - Wave Macros may be utilized for setting the waveform on the Wavetable channel. Please note that the program will prioritize the first value in the macro. Alternatively, you can employ the Wave Sequencer for the same purpose, but it will only recognize the initial wave, devoid of any modulation, speed adjustment, or waveform morphing.

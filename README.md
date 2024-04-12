@@ -8,7 +8,7 @@ https://github.com/potatoTeto/fur2uge/releases
 ## Features
 - Automatic volume column->effect conversion (If an effect is also on the row, the volume will get overwritten)
 - All .uge effects supported, minus Callback Routines and Global Volume
-- Note that this is not a perfect conversion tool: It is designed to convert at least 90% of the work; some adjustments may be expected to get it to sound ideal.
+- Note that this is not a perfect conversion tool: It is designed to convert at least 90% of the work; some adjustments may be expected to get it to sound ideal. To ensure reliable debugging/accuracy, please remember to test your music in the [bgb emulator](https://bgb.bircd.org/)!
 
 ## Usage
 ### Casual Usage

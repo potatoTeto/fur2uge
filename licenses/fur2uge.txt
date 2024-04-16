@@ -1,4 +1,4 @@
-MIT License (For the fur2uge source code; Demo songs all rights reserved)
+MIT License
 
 Copyright (c) 2024 potatoTeto
 

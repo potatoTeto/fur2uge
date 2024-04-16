@@ -68,4 +68,4 @@ There are no dependencies required, beyond .NET and C#: Clone the project and bu
 
 fur2uge Source Code - MIT
 
-All demo songs - All rights reserved
+All demo songs - CC BY-NC

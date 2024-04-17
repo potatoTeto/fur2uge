@@ -40,6 +40,11 @@ namespace fur2Uge
             return _gbEnvVol;
         }
 
+        public (int,int,int) GetEnvParams()
+        {
+            return (_gbEnvVol, _gbEnvLen, _gbEnvDir);
+        }
+
         public void SetEnvVol(byte val)
         {
             _gbEnvVol = val;

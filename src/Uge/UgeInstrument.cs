@@ -249,7 +249,17 @@
 
                 // Set the macro's loop point based on the longest macro found was, if applicable
                 if (highestJumpVal != (-9, -9))
-                    _subPattern[highestJumpVal.Item1].SetJump(highestJumpVal.Item2 + 1);
+                {
+                    var loopOffset = 0;
+                    if (highestJumpVal.Item2 == highestJumpVal.Item1)
+                        loopOffset = 1;
+                    _subPattern[highestJumpVal.Item1].SetJump(highestJumpVal.Item2 + loopOffset);
+                } else if (macros.Count > 0)
+                {
+                    var macroLen = macros[0].GetMacroData().Count;
+                    if (macroLen > 1)
+                        _subPattern[macroLen].SetJump(macroLen);
+                }
             }
 
             public byte[] EmitBytes(UgeHeader header)

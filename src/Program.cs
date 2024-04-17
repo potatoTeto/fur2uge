@@ -463,29 +463,13 @@ namespace fur2Uge
                         ugeFxCmd = null;
                         ugeFXVal = furFxVal;
 
-                        switch (furFxCmd)
+                        switch ((UgeEffectTable)furFxCmd)
                         {
                             default:
-                                // Not supported; Ignore this command.
+                                ugeFxCmd = (UgeEffectTable)furFxCmd;
                                 break;
-                            case 0x00:
-                                ugeFxCmd = UgeEffectTable.ARPEGGIO;
-                                break;
-                            case 0x01:
-                                ugeFxCmd = UgeEffectTable.PORTAMENTO_UP;
-                                break;
-                            case 0x02:
-                                ugeFxCmd = UgeEffectTable.PORTAMENTO_DOWN;
-                                break;
-                            case 0x03:
-                                ugeFxCmd = UgeEffectTable.TONE_PORTAMENTO;
-                                break;
-                            case 0x04:
-                                ugeFxCmd = UgeEffectTable.VIBRATO;
-                                break;
-                            case 0x08:
+                            case UgeEffectTable.SET_PANNING:
                                 ugeFxCmd = UgeEffectTable.SET_PANNING;
-
                                 // Update this channel's pan values
                                 bool rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
                                 bool leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
@@ -498,35 +482,17 @@ namespace fur2Uge
                                     ugeFXVal |= chanState.GetPan();
                                 }
                                 break;
-                            case 0x0A:
-                                ugeFxCmd = UgeEffectTable.VOLUME_SLIDE;
-                                break;
-                            case 0x0B:
+                            case UgeEffectTable.POSITION_JUMP:
                                 ugeFxCmd = UgeEffectTable.POSITION_JUMP;
                                 ugeFXVal++;
                                 break;
-                            case 0x0D:
+                            case UgeEffectTable.PATTERN_BREAK:
                                 ugeFxCmd = UgeEffectTable.PATTERN_BREAK;
                                 ugeFXVal++;
                                 break;
-                            case 0x0F:
-                                ugeFxCmd = UgeEffectTable.SET_SPEED;
-                                break;
-                            case 0x12:
-                                ugeFxCmd = UgeEffectTable.SET_DUTY_CYCLE;
-                                break;
-                            case 0x80:
-                                ugeFxCmd = UgeEffectTable.SET_PANNING;
-                                break;
-                            case 0xEC:
-                                ugeFxCmd = UgeEffectTable.NOTE_CUT;
-                                break;
-                            case 0xED:
-                                ugeFxCmd = UgeEffectTable.NOTE_DELAY;
-                                break;
                         }
 
-                        if (ugeFXVal >= 0 && ugeFxCmd != null)
+                        if (ugeFXVal > 0 && ugeFxCmd != null && (byte)ugeFxCmd != 0xF1)
                             patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
 
                     }

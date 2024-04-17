@@ -492,7 +492,7 @@ namespace fur2Uge
                                 break;
                         }
 
-                        if (ugeFXVal > 0 && ugeFxCmd != null && (byte)ugeFxCmd != 0xF1)
+                        if (ugeFXVal > 0 && ugeFxCmd != null && ugeFxCmd < UgeEffectTable.MAX)
                             patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
 
                     }

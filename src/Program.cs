@@ -147,7 +147,6 @@ namespace fur2Uge
             // Set the project speed
             ugeFile.SetSpeed(furSong.Speed1);
 
-
             /// Sort the Furnace unique-per-channel order table to accomodate for hUGETracker's global pattern layout
             // Input a uge Pattern Index, get the fur pattern index
             Dictionary<int, int> furPointerLookup = new Dictionary<int, int>();
@@ -160,21 +159,26 @@ namespace fur2Uge
             // Populate the table with unique indices
             for (int chanID = 0; chanID < furSong.OrderTable.GetLength(0); chanID++)
             {
-                // Unique offset for each row, to differentiate them more easily during conversion
                 int pointerOffset = (chanID + 1) * 0x1000;
                 for (int row = 0; row < furSong.OrderTable.GetLength(1); row++)
                 {
                     int furPointer = furSong.OrderTable[chanID, row] + pointerOffset;
-                    if (!ugePointerLookup.ContainsKey(furPointer))
+
+                    // Check if the furPointer already exists in the lookup table
+                    if (!furPointerLookup.ContainsKey(furPointer))
                     {
-                        // ugePointer value will increment from 0, based on how many there are
-                        int ugePointer = ugePointerLookup.Count;
-                        ugePointerLookup[furPointer] = ugePointer;
-                        furPointerLookup[ugePointer] = furPointer;
+                        // If it doesn't exist, add it to the lookup tables
+                        int ugePointer = furPointerLookup.Count;
+                        furPointerLookup[furPointer] = ugePointer;
+                        ugePointerLookup[ugePointer] = furPointer;
                     }
-                    ugeOrderTable[chanID, row] = ugePointerLookup[furPointer];
+
+                    // Map the furPointer to the corresponding ugePointer
+                    ugeOrderTable[chanID, row] = furPointerLookup[furPointer];
                 }
             }
+
+            // Set the order table in the UGE file
             ugeFile.SetOrderTable(ugeOrderTable);
 
             // Populate the Uge Pattern Tables
@@ -187,17 +191,25 @@ namespace fur2Uge
                 }
             }
 
+            for (int rowIndex = 0; rowIndex < ugeOrderTable.GetLength(1); rowIndex++)
+            {
+                for (int chanID = 0; chanID < ugeOrderTable.GetLength(0); chanID++)
+                {
+                    Console.Write($"{ugeOrderTable[chanID, rowIndex]}\t"); // Print each value followed by a tab for spacing
+                }
+                Console.WriteLine(); // Move to the next line after printing each row
+            }
             var orderTableHeight = ugeOrderTable.GetLength(1);
 
             // Keep track of all the new instruments we define, on a per channel basis (Pulse 1 & 2 count as the same channel in this case)
             List<FurInstrument> furPulseInstruments = new List<FurInstrument>();
             List<FurInstrument> furWaveInstruments = new List<FurInstrument>();
             List<FurInstrument> furNoiseInstruments = new List<FurInstrument>();
-            Dictionary<int, List<byte>> seenVolumes = new Dictionary<int, List<byte>>();
+            Dictionary<int, List<int>> seenVolumes = new Dictionary<int, List<int>>();
             Dictionary<(int, byte), int> clonedVolInstrumentLookup = new Dictionary<(int, byte), int>();  // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
             for (var i = 0; i < moduleInfo.GlobalInstruments.Count; i++)
             {
-                seenVolumes[i] = new List<byte>();
+                seenVolumes[i] = new List<int>();
             }
 
             /// Create 4 channels to simulate the song as we parse it
@@ -205,15 +217,14 @@ namespace fur2Uge
             for (var i = 0; i < ugeGBChannelStates.Length; i++)
                 ugeGBChannelStates[i] = new UgeGBChannelState(i);
 
-            for (int orderRow = 0; orderRow < orderTableHeight; orderRow++)
+            for (int chanID = 0; chanID < 4; chanID++)
             {
-                for (int chanID = 0; chanID < 4; chanID++)
+                for (int orderRow = 0; orderRow < orderTableHeight; orderRow++)
                 {
-
                     int ugePatternID = ugeOrderTable[chanID, orderRow];
-                    int furPointer = furPointerLookup[ugePatternID];
                     //int targChannel = ((furPointer & 0xF000) >> 12) - 1;
-                    int furPatternID = (furPointer & 0x7);
+
+                    int furPatternID = furSong.OrderTable[chanID, orderRow];
 
                     FurPatternData thisPattern = furSong.Channels[chanID].GetPattern(furPatternID);
                     List<FurPatternRowData> patRowData = thisPattern.GetAllRowData();
@@ -250,157 +261,129 @@ namespace fur2Uge
                         byte gbEnvVol;
                         if (instrVal >= 0)
                         {
-                            var chanCurrVol = ugeGBChannelStates[chanID].GetVol();
-                            // Keep track of every unique instrument used (will be defined later)
-                            switch (chanID)
+                            if (autoVolumeDetection)
                             {
-                                default:
-                                case 0:
-                                case 1:
-                                    foreach (FurInstrument inst in furPulseInstruments)
-                                    {
-                                        var instrID = inst.GetID();
+                                // Keep track of every unique instrument used (will be defined later)
+                                var chanCurrVol = ugeGBChannelStates[chanID].GetVol();
 
-                                        /// Check if we've already played this instrument previously
-                                        if (instrID == moduleInfo.GlobalInstruments[instrVal].GetID())
+                                switch (chanID)
+                                {
+                                    default:
+                                    case 0:
+                                    case 1:
+                                        foreach (FurInstrument inst in furPulseInstruments)
                                         {
-                                            // Check if the volume on this row is going to be the same as a previously-played instrument (also consider Uge Cxx). If it's not, we need to mark it as a duplicate, too.
-
-                                            // Consider if we're setting a new volume here
-                                            gbEnvVol = inst.GetInstrGB().GetEnvVol();
-                                            if (volVal >= 0)
-                                            {
-                                                if (gbEnvVol != volVal)
-                                                {
-                                                    if (!seenVolumes[instrID].Contains((byte)volVal))
-                                                    {
-                                                        newVolInstr = true;
-                                                    }
-                                                    else
-                                                    {
-                                                        duplicateInstr = true;
-                                                        instrVal = duplicateCheckingIndex;
-
-                                                        // Correct the instrVal if we've already seen this volume before
-                                                        if (seenVolumes[instrID].Contains((byte)volVal))
-                                                        {
-                                                            instrVal = clonedVolInstrumentLookup[(instrID, (byte)volVal)];
-                                                            ugeGBChannelStates[chanID].SetVol((byte)volVal);
-                                                            ugeGBChannelStates[chanID].SetCurrInstrID(instrVal);
-                                                            chanCurrVol = (byte)volVal;
-                                                        }
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    duplicateInstr = true;
-                                                    instrVal = duplicateCheckingIndex;
-                                                }
-                                            }
-                                            else if (chanCurrVol != gbEnvVol)
-                                            {
-                                                if (!seenVolumes[instrID].Contains(gbEnvVol))
-                                                    newVolInstr = true;
-                                                else
-                                                {
-                                                    duplicateInstr = true;
-                                                    instrVal = duplicateCheckingIndex;
-                                                }
-                                            }
-                                            else
+                                            if (inst == moduleInfo.GlobalInstruments[instrVal])
                                             {
                                                 duplicateInstr = true;
                                                 instrVal = duplicateCheckingIndex;
+                                                break;
                                             }
-                                            break;
+                                            duplicateCheckingIndex++;
                                         }
-                                        duplicateCheckingIndex++;
-                                    }
-
-                                    if (!duplicateInstr)
-                                    {
-                                        FurInstrument instr = moduleInfo.GlobalInstruments[instrVal];
-                                        var instrID = instr.GetID();
-                                        gbEnvVol = instr.GetInstrGB().GetEnvVol();
-                                        if (volVal >= 0 && autoVolumeDetection)
+                                        if (!duplicateInstr)
                                         {
-                                            if (gbEnvVol != volVal)
-                                                if (!seenVolumes[instrID].Contains((byte)volVal))
-                                                    newVolInstr = true;
+                                            furPulseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                            instrVal = furPulseInstruments.Count - 1;
                                         }
-
-                                        // Because this envelope * volume column does not match anything else we've played before, we need to create a modified copy of the instrument that contains the new volume value.
-                                        if (newVolInstr)
+                                        break;
+                                    case 2:
+                                        foreach (FurInstrument inst in furWaveInstruments)
                                         {
-                                            instr = moduleInfo.GlobalInstruments[instrVal].ShallowCopy();
-                                            int newVolVal;
-                                            if (volVal > 0)
+                                            if (inst == moduleInfo.GlobalInstruments[instrVal])
                                             {
-                                                instr.SetGBVol((byte)volVal);
-                                                newVolVal = volVal;
+                                                duplicateInstr = true;
+                                                instrVal = duplicateCheckingIndex;
+                                                break;
                                             }
-                                            else
+                                            duplicateCheckingIndex++;
+                                        }
+                                        if (!duplicateInstr)
+                                        {
+                                            furWaveInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                            instrVal = furWaveInstruments.Count - 1;
+                                        }
+                                        break;
+                                    case 3:
+                                        foreach (FurInstrument inst in furNoiseInstruments)
+                                        {
+                                            if (inst == moduleInfo.GlobalInstruments[instrVal])
                                             {
-                                                instr.SetGBVol((byte)chanCurrVol);
-                                                newVolVal = chanCurrVol;
+                                                duplicateInstr = true;
+                                                instrVal = duplicateCheckingIndex;
+                                                break;
                                             }
-
-                                            seenVolumes[instrID].Add((byte)newVolVal);
-
-                                            clonedVolInstrumentLookup[(instrID, (byte)newVolVal)] = furPulseInstruments.Count;
-                                            volVal = -9999;
+                                            duplicateCheckingIndex++;
                                         }
-
-                                        furPulseInstruments.Add(instr);
-                                        instrVal = furPulseInstruments.Count - 1;
-                                        ugeGBChannelStates[chanID].SetCurrInstrID(instrVal);
-                                    }
-                                    else
-                                    {
-                                        try
+                                        if (!duplicateInstr)
                                         {
-                                            instrVal = clonedVolInstrumentLookup[(furPulseInstruments[ugeGBChannelStates[chanID].GetCurrInstrID()].GetID(), chanCurrVol)];
+                                            furNoiseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                            instrVal = furNoiseInstruments.Count - 1;
                                         }
-                                        catch (KeyNotFoundException)
-                                        {
-                                        }
-                                    }
-                                    break;
-                                case 2:
-                                    foreach (FurInstrument inst in furWaveInstruments)
-                                    {
-                                        if (inst == moduleInfo.GlobalInstruments[instrVal])
-                                        {
-                                            duplicateInstr = true;
-                                            instrVal = duplicateCheckingIndex;
-                                            break;
-                                        }
-                                        duplicateCheckingIndex++;
-                                    }
-                                    if (!duplicateInstr)
-                                    {
-                                        furWaveInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
-                                        instrVal = furWaveInstruments.Count - 1;
-                                    }
-                                    break;
-                                case 3:
-                                    foreach (FurInstrument inst in furNoiseInstruments)
-                                    {
-                                        if (inst == moduleInfo.GlobalInstruments[instrVal])
-                                        {
-                                            duplicateInstr = true;
-                                            instrVal = duplicateCheckingIndex;
-                                            break;
-                                        }
-                                        duplicateCheckingIndex++;
-                                    }
-                                    if (!duplicateInstr)
-                                    {
-                                        furNoiseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
-                                        instrVal = furNoiseInstruments.Count - 1;
-                                    }
-                                    break;
+                                        break;
+                                }
                             }
+                            else
+                            {
+
+                                switch (chanID)
+                                {
+                                    default:
+                                    case 0:
+                                    case 1:
+                                        foreach (FurInstrument inst in furPulseInstruments)
+                                        {
+                                            if (inst == moduleInfo.GlobalInstruments[instrVal])
+                                            {
+                                                duplicateInstr = true;
+                                                instrVal = duplicateCheckingIndex;
+                                                break;
+                                            }
+                                            duplicateCheckingIndex++;
+                                        }
+                                        if (!duplicateInstr)
+                                        {
+                                            furPulseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                            instrVal = furPulseInstruments.Count - 1;
+                                        }
+                                        break;
+                                    case 2:
+                                        foreach (FurInstrument inst in furWaveInstruments)
+                                        {
+                                            if (inst == moduleInfo.GlobalInstruments[instrVal])
+                                            {
+                                                duplicateInstr = true;
+                                                instrVal = duplicateCheckingIndex;
+                                                break;
+                                            }
+                                            duplicateCheckingIndex++;
+                                        }
+                                        if (!duplicateInstr)
+                                        {
+                                            furWaveInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                            instrVal = furWaveInstruments.Count - 1;
+                                        }
+                                        break;
+                                    case 3:
+                                        foreach (FurInstrument inst in furNoiseInstruments)
+                                        {
+                                            if (inst == moduleInfo.GlobalInstruments[instrVal])
+                                            {
+                                                duplicateInstr = true;
+                                                instrVal = duplicateCheckingIndex;
+                                                break;
+                                            }
+                                            duplicateCheckingIndex++;
+                                        }
+                                        if (!duplicateInstr)
+                                        {
+                                            furNoiseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
+                                            instrVal = furNoiseInstruments.Count - 1;
+                                        }
+                                        break;
+                                }
+                            }
+
                             patCon.SetInstrument((GBChannel)chanID, (byte)ugePatternID, rowIndex, instrVal);
                         }
 
@@ -553,7 +536,7 @@ namespace fur2Uge
                 List<FurInstrMacro> macros = pulseInst.GetMacros();
 
                 //return (_gbHWSeqSweepSpeed, _gbHWSeqSweepDir, _gbHWSeqShiftVal);
-                UgeInstrument ugePulse = new UgeInstrument(name, (uint)UgeInstrumentType.PULSE, gbParams.Item1, (gbParams.Item2 > 0x1) ? 0U : 1U,
+                UgeInstrument ugePulse = new UgeInstrument(name, (uint)UgeInstrumentType.PULSE, gbParams.Item1, (gbParams.Item2 >= 0x1) ? 1U : 0U,
                     gbParams.Item3, gbParams.Item4, gbParams.Item5, gbParams.Item6, gbParams.Item7, macros, null, 0x1, 0x1, panMacroOnChannel
                     );
 

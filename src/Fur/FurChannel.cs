@@ -6,18 +6,18 @@ namespace fur2Uge
     {
         private FurFile.FurChipType _chip;
         private int _chanID;
-        private List<FurPatternData> _patterns;
+        private Dictionary<int, FurPatternData> _patterns;
 
         public FurChannel(FurFile.FurChipType chip, int chanID)
         {
             _chip = chip;
             _chanID = chanID;
-            _patterns = new List<FurPatternData>();
+            _patterns = new Dictionary<int, FurPatternData>();
         }
 
-        public void AddPattern(FurPatternData thisPattern)
+        public void AddPattern(int patternID, FurPatternData thisPattern)
         {
-            _patterns.Add(thisPattern);
+            _patterns.Add(patternID, thisPattern);
         }
 
         public FurPatternData GetPattern(int orderID)

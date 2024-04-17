@@ -601,6 +601,7 @@ namespace fur2Uge
                                     }
 
                                     FurInstrGB thisGBInstr = new FurInstrGB(gbEnvLen, gbEnvDir, gbEnvVol, gbInstSndLen, gbInstFlags, gbInstHWSeqLen, gBHWSeqCmds);
+                                    var myName = thisInstr.GetName();
                                     thisInstr.SetInstrGB(thisGBInstr);
                                     break;
                                 case FurInstrFeature.SAMPLE_INS_DATA:
@@ -1102,7 +1103,7 @@ namespace fur2Uge
                             }
                         }
 
-                        ptnChannel.AddPattern(thisPattern);
+                        ptnChannel.AddPattern(ptnIndex, thisPattern);
 
                     }
                     else

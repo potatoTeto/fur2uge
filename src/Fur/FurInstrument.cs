@@ -22,7 +22,7 @@
             _instrType = instrType;
 
             _instrMacros = new List<FurInstrMacro>();
-            _furInstrGB = new FurInstrGB(2, 1, 15, 2, 0x0, 0x0, new List<FurInstrGBHWSeqCmd>());
+            _furInstrGB = new FurInstrGB(2, 0, 15, 2, 0x0, 0x0, new List<FurInstrGBHWSeqCmd>());
             _furInstrSM = new FurInstrSM(0, false, false, false, 32, new List<FurSampleMapEntry>());
         }
 

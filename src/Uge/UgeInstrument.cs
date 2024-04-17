@@ -50,7 +50,7 @@
                 _type = instrumentType;
                 _typeEnum = (UgeInstrumentType)instrumentType;
                 _initialVolume = 0xF;
-                _volSweepDir = 0x1;
+                _volSweepDir = 0x0;
                 _freqSweepDirection = 0x1;
                 _wavetableVolume = 0x1;
                 _noiseMacroData = new sbyte[6];
@@ -67,7 +67,7 @@
                 _type = instrumentType;
                 _typeEnum = (UgeInstrumentType)instrumentType;
                 _initialVolume = 0xF;
-                _volSweepDir = 0x1;
+                _volSweepDir = 0x0;
                 _freqSweepDirection = 0x1;
                 _wavetableVolume = wavetableVolume;
                 _wavetableIndex = wavetableIndex;
@@ -143,11 +143,12 @@
                 (int, int) highestJumpVal = (-9, -9); // Row, Loop Point
 
                 // Iterate through all of the macros and populate the subpattern
-                foreach (FurInstrMacro m in macros)
+                for (var macroIndex = macros.Count - 1; macroIndex >= 0; macroIndex--)
                 {
-                    var code = m.GetMacroCode();
-                    var data = m.GetMacroData();
-                    var loopPoint = (byte)m.GetLoopPoint();
+                    var thisMacro = macros[macroIndex];
+                    var code = thisMacro.GetMacroCode();
+                    var data = thisMacro.GetMacroData();
+                    var loopPoint = (byte)thisMacro.GetLoopPoint();
                     //var type = m.GetMacroType();
 
                     if (data.Count > 1)
@@ -158,9 +159,9 @@
                         case FurFile.FurInstrMacroCode.PAN_L:
                             if (data.Count > 1)
                             {
-                                for (var i = 0; i < data.Count; i++)
+                                for (var macroDataPos = 0; macroDataPos < data.Count; macroDataPos++)
                                 {
-                                    var panVal = (byte)data[i];
+                                    var panVal = (byte)data[macroDataPos];
 
                                     // Check if bitA is set
                                     bool rightSpeakerOn = (panVal & (1 << 0)) != 0;
@@ -186,7 +187,7 @@
                                     else
                                         panFinalVal &= ~(1 << bitB); // Clear bit B
 
-                                    _subPattern[i].SetEffect(UgeEffectTable.SET_PANNING, (byte)panFinalVal);
+                                    _subPattern[macroDataPos].SetEffect(UgeEffectTable.SET_PANNING, (byte)panFinalVal);
                                 }
                             }
                             break;
@@ -263,7 +264,7 @@
                         byteList.AddRange(BitConverter.GetBytes(_length));
                         byteList.AddRange(BitConverter.GetBytes(_lengthEnabled));
                         byteList.Add(_initialVolume);
-                        byteList.AddRange(BitConverter.GetBytes(_volSweepDir));
+                        byteList.AddRange(BitConverter.GetBytes(_volSweepDir <= 0 ? 0x1 : 0x0));
                         byteList.Add(_volSweepSpeed);
                         byteList.AddRange(BitConverter.GetBytes(_freqSweepTime));
                         byteList.AddRange(BitConverter.GetBytes(_freqSweepDirection));

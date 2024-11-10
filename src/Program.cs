@@ -417,7 +417,7 @@ namespace fur2Uge
                             furFxVal = furAllChannelFxColumns[i].GetValue();
                             furFxValIsPresent = furAllChannelFxColumns[i].GetValueIsPresent();
 
-                            if (furFxVal == 0x00)
+                            if (furFxVal == 0x00 && furFxValIsPresent)
                             {
                                 // We're turning off a command. Which command is this?
                                 switch (furFxCmd)
@@ -461,47 +461,56 @@ namespace fur2Uge
                             }
                         }
 
-                        // Now that the channel state is up-to-date, we should parse the command in FX Slot 0. We will ignore any other commands in the other FX slots.
+                        // Now that the channel state is up-to-date, we should parse the commands in the FX Slots, in order from left to right
 
-                        furFxCmd = furAllChannelFxColumns[0].GetCommand();
-                        furFxCmdIsPresent = furAllChannelFxColumns[0].GetCommandIsPresent();
-                        furFxVal = furAllChannelFxColumns[0].GetValue();
-                        furFxValIsPresent = furAllChannelFxColumns[0].GetValueIsPresent();
-
-                        ugeFxCmd = null;
-                        ugeFXVal = furFxVal;
-
-                        switch ((UgeEffectTable)furFxCmd)
+                        for (var j = 0; j < furAllChannelFxColumns.Length; j++)
                         {
-                            default:
-                                ugeFxCmd = (UgeEffectTable)furFxCmd;
-                                break;
-                            case UgeEffectTable.SET_PANNING:
-                                ugeFxCmd = UgeEffectTable.SET_PANNING;
-                                // Update this channel's pan values
-                                bool rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
-                                bool leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
-                                ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
+                            furFxCmd = furAllChannelFxColumns[j].GetCommand();
+                            furFxCmdIsPresent = furAllChannelFxColumns[j].GetCommandIsPresent();
+                            furFxVal = furAllChannelFxColumns[j].GetValue();
+                            furFxValIsPresent = furAllChannelFxColumns[j].GetValueIsPresent();
 
-                                // Update the pan value based on all of the GB Channels' current pan states
-                                ugeFXVal = 0x0;
-                                foreach (UgeGBChannelState chanState in ugeGBChannelStates)
+                            ugeFxCmd = null;
+                            ugeFXVal = furFxVal;
+
+                            if (!furFxValIsPresent)
+                                furFxVal = 0x0;
+
+                            if (furFxCmdIsPresent)
+                            {
+                                switch ((UgeEffectTable)furFxCmd)
                                 {
-                                    ugeFXVal |= chanState.GetPan();
-                                }
-                                break;
-                            case UgeEffectTable.POSITION_JUMP:
-                                ugeFxCmd = UgeEffectTable.POSITION_JUMP;
-                                ugeFXVal++;
-                                break;
-                            case UgeEffectTable.PATTERN_BREAK:
-                                ugeFxCmd = UgeEffectTable.PATTERN_BREAK;
-                                ugeFXVal++;
-                                break;
-                        }
+                                    default:
+                                        ugeFxCmd = (UgeEffectTable)furFxCmd;
+                                        break;
+                                    case UgeEffectTable.SET_PANNING:
+                                        ugeFxCmd = UgeEffectTable.SET_PANNING;
+                                        // Update this channel's pan values
+                                        bool rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
+                                        bool leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
+                                        ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
 
-                        if (ugeFXVal > 0 && ugeFxCmd != null && ugeFxCmd < UgeEffectTable.MAX)
-                            patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                                        // Update the pan value based on all of the GB Channels' current pan states
+                                        ugeFXVal = 0x0;
+                                        foreach (UgeGBChannelState chanState in ugeGBChannelStates)
+                                        {
+                                            ugeFXVal |= chanState.GetPan();
+                                        }
+                                        break;
+                                    case UgeEffectTable.POSITION_JUMP:
+                                        ugeFxCmd = UgeEffectTable.POSITION_JUMP;
+                                        ugeFXVal++;
+                                        break;
+                                    case UgeEffectTable.PATTERN_BREAK:
+                                        ugeFxCmd = UgeEffectTable.PATTERN_BREAK;
+                                        ugeFXVal++;
+                                        break;
+                                }
+
+                                if (ugeFXVal > 0 && ugeFxCmd != null && ugeFxCmd < UgeEffectTable.MAX)
+                                    patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                            }
+                        }
 
                     }
                 }

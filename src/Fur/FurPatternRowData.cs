@@ -12,50 +12,32 @@ namespace fur2Uge
         private string _rowNoteName;
         private int _rowInstrVal;
         private int _rowVolVal;
-        private int _rowFX0;
-        private int _rowFX0Val;
-        private int _rowFX1;
-        private int _rowFX1Val;
-        private int _rowFX2;
-        private int _rowFX2Val;
-        private int _rowFX3;
-        private int _rowFX3Val;
-        private int _rowFX4;
-        private int _rowFX4Val;
-        private int _rowFX5;
-        private int _rowFX5Val;
-        private int _rowFX6;
-        private int _rowFX6Val;
-        private int _rowFX7;
-        private int _rowFX7Val;
+        private FurPatternRowDataEffectCell[] _effectData = new FurPatternRowDataEffectCell[8];
 
-        public FurPatternRowData()
-        {
-        }
-
-        public void SetData(int rowIndex, int rowNoteVal, string rowNoteName, int rowInstrVal, int rowVolVal, int rowFX0, int rowFX0Val, int rowFX1, int rowFX1Val, int rowFX2, int rowFX2Val, int rowFX3, int rowFX3Val, int rowFX4, int rowFX4Val, int rowFX5, int rowFX5Val, int rowFX6, int rowFX6Val, int rowFX7, int rowFX7Val)
+        public void SetData(int rowIndex, int rowNoteVal, string rowNoteName, int rowInstrVal, int rowVolVal,
+            int rowFX0Present, int rowFX0ValPresent, int rowFX0, int rowFX0Val,
+            int rowFX1Present, int rowFX1ValPresent, int rowFX1, int rowFX1Val,
+            int rowFX2Present, int rowFX2ValPresent, int rowFX2, int rowFX2Val,
+            int rowFX3Present, int rowFX3ValPresent, int rowFX3, int rowFX3Val,
+            int rowFX4Present, int rowFX4ValPresent, int rowFX4, int rowFX4Val,
+            int rowFX5Present, int rowFX5ValPresent, int rowFX5, int rowFX5Val,
+            int rowFX6Present, int rowFX6ValPresent, int rowFX6, int rowFX6Val,
+            int rowFX7Present, int rowFX7ValPresent, int rowFX7, int rowFX7Val)
         {
             _rowIndex = rowIndex;
             _rowNoteVal = rowNoteVal;
             _rowNoteName = rowNoteName;
             _rowInstrVal = rowInstrVal;
             _rowVolVal = rowVolVal;
-            _rowFX0 = rowFX0;
-            _rowFX0Val = rowFX0Val;
-            _rowFX1 = rowFX1;
-            _rowFX1Val = rowFX1Val;
-            _rowFX2 = rowFX2;
-            _rowFX2Val = rowFX2Val;
-            _rowFX3 = rowFX3;
-            _rowFX3Val = rowFX3Val;
-            _rowFX4 = rowFX4;
-            _rowFX4Val = rowFX4Val;
-            _rowFX5 = rowFX5;
-            _rowFX5Val = rowFX5Val;
-            _rowFX6 = rowFX6;
-            _rowFX6Val = rowFX6Val;
-            _rowFX7 = rowFX7;
-            _rowFX7Val = rowFX7Val;
+
+            _effectData[0] = new FurPatternRowDataEffectCell(rowFX0Present > 0, rowFX0ValPresent > 0, rowFX0, rowFX0Val);
+            _effectData[1] = new FurPatternRowDataEffectCell(rowFX1Present > 0, rowFX1ValPresent > 0, rowFX1, rowFX1Val);
+            _effectData[2] = new FurPatternRowDataEffectCell(rowFX2Present > 0, rowFX2ValPresent > 0, rowFX2, rowFX2Val);
+            _effectData[3] = new FurPatternRowDataEffectCell(rowFX3Present > 0, rowFX3ValPresent > 0, rowFX3, rowFX3Val);
+            _effectData[4] = new FurPatternRowDataEffectCell(rowFX4Present > 0, rowFX4ValPresent > 0, rowFX4, rowFX4Val);
+            _effectData[5] = new FurPatternRowDataEffectCell(rowFX5Present > 0, rowFX5ValPresent > 0, rowFX5, rowFX5Val);
+            _effectData[6] = new FurPatternRowDataEffectCell(rowFX6Present > 0, rowFX6ValPresent > 0, rowFX6, rowFX6Val);
+            _effectData[7] = new FurPatternRowDataEffectCell(rowFX7Present > 0, rowFX7ValPresent > 0, rowFX7, rowFX7Val);
         }
 
         public int GetNoteVal()
@@ -78,19 +60,9 @@ namespace fur2Uge
             return _rowVolVal;
         }
 
-        public List<byte> GetEffectData()
+        public FurPatternRowDataEffectCell[] GetEffectData()
         {
-            List<byte> bytes = new List<byte>();
-            bytes.AddRange(new byte[]{
-                (byte)_rowFX0, (byte)_rowFX0Val,
-                (byte)_rowFX1, (byte)_rowFX1Val,
-                (byte)_rowFX2, (byte)_rowFX2Val,
-                (byte)_rowFX3, (byte)_rowFX3Val,
-                (byte)_rowFX4, (byte)_rowFX4Val,
-                (byte)_rowFX5, (byte)_rowFX5Val,
-                (byte)_rowFX6, (byte)_rowFX6Val,
-                (byte)_rowFX7, (byte)_rowFX7Val});
-            return bytes;
+            return _effectData;
         }
     }
 }

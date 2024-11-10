@@ -230,11 +230,14 @@ namespace fur2Uge
                         if (volVal >= 0)
                             ugeGBChannelStates[chanID].SetVol((byte)volVal);
 
-                        List<byte> furAllChannelFxColumns = thisRowData.GetEffectData();
+                        FurPatternRowDataEffectCell[] furAllChannelFxColumns = thisRowData.GetEffectData();
 
                         // Also declaring some variables, for later...
                         byte furFxCmd;
                         byte furFxVal;
+                        bool furFxCmdIsPresent;
+                        bool furFxValIsPresent;
+
                         byte ugeFXVal;
                         UgeEffectTable? ugeFxCmd;
                         bool newVolInstr = false;
@@ -407,10 +410,12 @@ namespace fur2Uge
 
                         // Before writing any new effects, update the state of the channel,
                         // just in case we turned off any effects on this row, for any FX column...
-                        for (var i = 0; i < furAllChannelFxColumns.Count; i += 2)
+                        for (var i = 0; i < furAllChannelFxColumns.Length; i++)
                         {
-                            furFxCmd = furAllChannelFxColumns[i];
-                            furFxVal = furAllChannelFxColumns[i + 1];
+                            furFxCmd = furAllChannelFxColumns[i].GetCommand();
+                            furFxCmdIsPresent = furAllChannelFxColumns[i].GetCommandIsPresent();
+                            furFxVal = furAllChannelFxColumns[i].GetValue();
+                            furFxValIsPresent = furAllChannelFxColumns[i].GetValueIsPresent();
 
                             if (furFxVal == 0x00)
                             {
@@ -456,9 +461,12 @@ namespace fur2Uge
                             }
                         }
 
-                        // Now that the channel state is up-to-date, we should parse the command in FX Slot 1. We will ignore any other commands in the other FX slots.
-                        furFxCmd = furAllChannelFxColumns[0];
-                        furFxVal = furAllChannelFxColumns[1];
+                        // Now that the channel state is up-to-date, we should parse the command in FX Slot 0. We will ignore any other commands in the other FX slots.
+
+                        furFxCmd = furAllChannelFxColumns[0].GetCommand();
+                        furFxCmdIsPresent = furAllChannelFxColumns[0].GetCommandIsPresent();
+                        furFxVal = furAllChannelFxColumns[0].GetValue();
+                        furFxValIsPresent = furAllChannelFxColumns[0].GetValueIsPresent();
 
                         ugeFxCmd = null;
                         ugeFXVal = furFxVal;

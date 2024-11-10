@@ -1107,7 +1107,15 @@ namespace fur2Uge
 
                                 if (dataWritten)
                                 {
-                                    thisRow.SetData(row, rowNoteVal, rowNoteName, rowInstVal, rowVolVal, rowFX0, rowFX0Val, rowFX1, rowFX1Val, rowFX2, rowFX2Val, rowFX3, rowFX3Val, rowFX4, rowFX4Val, rowFX5, rowFX5Val, rowFX6, rowFX6Val, rowFX7, rowFX7Val);
+                                    thisRow.SetData(row, rowNoteVal, rowNoteName, rowInstVal, rowVolVal,
+                                        rowFX0Present, rowFXVal0Present, rowFX0, rowFX0Val,
+                                        rowFX1Present, rowFXVal1Present, rowFX1, rowFX1Val,
+                                        rowFX2Present, rowFXVal2Present, rowFX2, rowFX2Val,
+                                        rowFX3Present, rowFXVal3Present, rowFX3, rowFX3Val,
+                                        rowFX4Present, rowFXVal4Present, rowFX4, rowFX4Val,
+                                        rowFX5Present, rowFXVal5Present, rowFX5, rowFX5Val,
+                                        rowFX6Present, rowFXVal6Present, rowFX6, rowFX6Val,
+                                        rowFX7Present, rowFXVal7Present, rowFX7, rowFX7Val);
                                     thisPattern.AppendRowData(thisRow);
                                 }
                             }

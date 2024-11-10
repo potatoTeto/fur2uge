@@ -688,6 +688,16 @@ namespace fur2Uge
                                 case FurInstrFeature.X1_010_INS_DATA:
                                     break;
                                 case FurInstrFeature.NES_DPCM_SAMPLE_MAP_DATA:
+                                    var useSampleMap = reader.ReadByte();
+                                    List<byte> newDPCMSampleMapData = new List<byte>();
+                                    if (useSampleMap > 0)
+                                    {
+                                        for (var samplePosition = 0; samplePosition < 120; samplePosition++) {
+                                            var smpData = reader.ReadByte();
+                                            newDPCMSampleMapData.Add(smpData);
+                                        }
+
+                                    }
                                     break;
                                 case FurInstrFeature.ESFM_INS_DATA:
                                     // Undocumented? Takes up 19 bytes apparently...

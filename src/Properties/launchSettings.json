@@ -2,7 +2,7 @@
   "profiles": {
     "fur2Uge": {
       "commandName": "Project",
-      "commandLineArgs": "--d output --i input/mm-bluegrass.fur --o output/mm-bluegrass.uge"
+      "commandLineArgs": "--d output --i input/fur2uge_test.fur --o output/fur2uge_test.uge"
     }
   }
 }

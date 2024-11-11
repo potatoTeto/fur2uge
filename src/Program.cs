@@ -248,7 +248,7 @@ namespace fur2Uge
                                     break;
 
                                 // Do not attempt to write certain effects iteratively
-                                if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT)
+                                if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED)
                                     break;
 
                                 patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() + i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
@@ -270,7 +270,7 @@ namespace fur2Uge
                                 break;
 
                             // Do not attempt to write certain effects iteratively
-                            if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT)
+                            if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED)
                                 break;
                             
                             patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() - i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
@@ -526,7 +526,7 @@ namespace fur2Uge
 
                             // If there should be nothing on this row, and the last effect was a Note Cut or Note Delay, don't iteratively write Note Cut/Note Delay on other rows
                             if (furFxCmd == 0xF1 && (ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.NOTE_DELAY))
-                                ugeFxCmd = (UgeEffectTable)furFxCmd;
+                                ugeFxCmd = UgeEffectTable.EMPTY;
 
                             if (furFxCmdIsPresent)
                                 ugeFXVal = furFxVal;

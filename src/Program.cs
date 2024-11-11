@@ -248,7 +248,7 @@ namespace fur2Uge
                                     break;
 
                                 // Do not attempt to write certain effects iteratively
-                                if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED)
+                                if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED || ugeFxCmd == UgeEffectTable.SET_PANNING)
                                     break;
 
                                 patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() + i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
@@ -270,7 +270,7 @@ namespace fur2Uge
                                 break;
 
                             // Do not attempt to write certain effects iteratively
-                            if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED)
+                            if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED || ugeFxCmd == UgeEffectTable.SET_PANNING)
                                 break;
                             
                             patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() - i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
@@ -531,6 +531,7 @@ namespace fur2Uge
                             if (furFxCmdIsPresent)
                                 ugeFXVal = furFxVal;
 
+                            bool rightSpeakerOn, leftSpeakerOn;
                             switch ((UgeEffectTable)furFxCmd)
                             {
                                 default:
@@ -541,10 +542,24 @@ namespace fur2Uge
                                 case (UgeEffectTable)0xED: // Note delay
                                     ugeFxCmd = UgeEffectTable.NOTE_DELAY;
                                     break;
+                                case (UgeEffectTable)0x80: // Channel Pan
+                                    // Update this channel's pan values
+                                    rightSpeakerOn = (furFxVal == 0x80 || furFxVal == 0xFF);
+                                    leftSpeakerOn = (furFxVal == 0x00 || furFxVal == 0x80);
+                                    ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
+                                    ugeFxCmd = UgeEffectTable.SET_PANNING;
+
+                                    // Update the pan value based on all of the GB Channels' current pan states
+                                    ugeFXVal = 0x0;
+                                    foreach (UgeGBChannelState chanState in ugeGBChannelStates)
+                                    {
+                                        ugeFXVal |= chanState.GetPan();
+                                    }
+                                    break;
                                 case UgeEffectTable.SET_PANNING:
                                     // Update this channel's pan values
-                                    bool rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
-                                    bool leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
+                                    rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
+                                    leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
                                     ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
 
                                     // Update the pan value based on all of the GB Channels' current pan states
@@ -565,7 +580,14 @@ namespace fur2Uge
                             //if (ugeFXVal > 0 && ugeFxCmd != null && ugeFxCmd < UgeEffectTable.MAX)
                             if (ugeFXVal > 0 && ugeFxCmd != UgeEffectTable.EMPTY)
                                 patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
-                            
+
+                            switch (ugeFxCmd)
+                            {
+                                case UgeEffectTable.SET_SPEED:
+                                case UgeEffectTable.SET_PANNING:
+                                    ugeFxCmd = UgeEffectTable.EMPTY;
+                                    break;
+                            }
                         }
 
                     }

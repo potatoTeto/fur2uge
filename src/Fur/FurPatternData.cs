@@ -1,5 +1,6 @@
 ﻿
 
+
 namespace fur2Uge
 {
     public class FurPatternData
@@ -28,6 +29,11 @@ namespace fur2Uge
         public List<FurPatternRowData> GetAllRowData()
         {
             return _rowData;
+        }
+
+        public int GetLength()
+        {
+            return _len;
         }
     }
 }

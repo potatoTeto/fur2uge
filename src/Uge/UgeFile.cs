@@ -15,6 +15,7 @@ namespace fur2Uge
 
     public enum UgeEffectTable
     {
+        EMPTY = 0xF1,
         ARPEGGIO = 0x0,
         PORTAMENTO_UP = 0x1,
         PORTAMENTO_DOWN = 0x2,

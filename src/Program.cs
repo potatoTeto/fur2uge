@@ -221,8 +221,63 @@ namespace fur2Uge
                     List<FurPatternRowData> patRowData = thisPattern.GetAllRowData();
 
                     /// Read all the pattern data and store it into the uge file, in order.
+                    // Also declaring some variables, for later...
+                    byte furFxCmd = 0x0;
+                    byte furFxVal = 0x0;
+                    bool furFxCmdIsPresent;
+                    bool furFxValIsPresent;
+                    byte ugeFXVal = 0x0;
+                    UgeEffectTable? ugeFxCmd = 0x0;
+                    int previousRowIndex = 0;
+                    int rowsSincePreviousData = 0;
+
                     foreach (FurPatternRowData thisRowData in patRowData)
                     {
+                        // First check: Is this the last row that contains data in the entire pattern?
+                        if (patRowData[patRowData.Count - 1] == thisRowData)
+                        {
+                            // This is the last row in the pattern that contains data; calculate how far we are from the end of the pattern
+                            int patLen = thisPattern.GetLength();
+                            int rowsToEndOfPattern = patLen - thisRowData.GetRowIndex();
+
+                            // Now, iterate through all the rows we're about to skip that don't contain any data, and populate them with any active effects from this final data row
+                            for (int i = 1; i < rowsToEndOfPattern; i++)
+                            {
+                                // Stop iteratively writing effects, if there are no useful effects to write to the .uge
+                                if (ugeFXVal <= 0 || ugeFxCmd == null)
+                                    break;
+
+                                // Do not attempt to write certain effects iteratively
+                                if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT)
+                                    break;
+
+                                patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() + i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                            }
+                        }
+
+                        // Count how many rows we skipped since the previous row containing data
+                        if (previousRowIndex > 0)
+                        {
+                            rowsSincePreviousData = thisRowData.GetRowIndex() - previousRowIndex;
+                        }
+                        previousRowIndex = thisRowData.GetRowIndex();
+
+                        // Iterate through all the previously-skipped rows, and populate them with any active effects from the previous row
+                        for (int i = rowsSincePreviousData - 1; i > 0; i--)
+                        {
+                            // Stop iteratively writing effects, if there are no useful effects to write to the .uge
+                            if (ugeFXVal <= 0 || ugeFxCmd == null)
+                                break;
+
+                            // Do not attempt to write certain effects iteratively
+                            if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT)
+                                break;
+                            
+                            patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() - i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                        }
+
+
+
                         // Grab all the data about this row
                         var rowIndex = thisRowData.GetRowIndex();
                         int noteVal = thisRowData.GetNoteVal();
@@ -232,14 +287,7 @@ namespace fur2Uge
 
                         FurPatternRowDataEffectCell[] furAllChannelFxColumns = thisRowData.GetEffectData();
 
-                        // Also declaring some variables, for later...
-                        byte furFxCmd;
-                        byte furFxVal;
-                        bool furFxCmdIsPresent;
-                        bool furFxValIsPresent;
 
-                        byte ugeFXVal;
-                        UgeEffectTable? ugeFxCmd;
                         bool newVolInstr = false;
 
                         // Notes first
@@ -412,10 +460,13 @@ namespace fur2Uge
                         // just in case we turned off any effects on this row, for any FX column...
                         for (var i = 0; i < furAllChannelFxColumns.Length; i++)
                         {
-                            furFxCmd = furAllChannelFxColumns[i].GetCommand();
                             furFxCmdIsPresent = furAllChannelFxColumns[i].GetCommandIsPresent();
-                            furFxVal = furAllChannelFxColumns[i].GetValue();
-                            furFxValIsPresent = furAllChannelFxColumns[i].GetValueIsPresent();
+                            if (furFxCmdIsPresent)
+                                furFxCmd = furAllChannelFxColumns[i].GetCommand();
+                            furFxValIsPresent = furAllChannelFxColumns[i].GetValueIsPresent(); 
+                            
+                            if (furFxValIsPresent)
+                                furFxVal = furAllChannelFxColumns[i].GetValue();
 
                             if (furFxVal == 0x00 && furFxValIsPresent)
                             {
@@ -470,46 +521,51 @@ namespace fur2Uge
                             furFxVal = furAllChannelFxColumns[j].GetValue();
                             furFxValIsPresent = furAllChannelFxColumns[j].GetValueIsPresent();
 
-                            ugeFxCmd = null;
-                            ugeFXVal = furFxVal;
+                            if (furFxCmdIsPresent)
+                                ugeFxCmd = (UgeEffectTable)furFxCmd;
 
-                            if (!furFxValIsPresent)
-                                furFxVal = 0x0;
+                            // If there should be nothing on this row, and the last effect was a Note Cut or Note Delay, don't iteratively write Note Cut/Note Delay on other rows
+                            if (furFxCmd == 0xF1 && (ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.NOTE_DELAY))
+                                ugeFxCmd = (UgeEffectTable)furFxCmd;
 
                             if (furFxCmdIsPresent)
+                                ugeFXVal = furFxVal;
+
+                            switch ((UgeEffectTable)furFxCmd)
                             {
-                                switch ((UgeEffectTable)furFxCmd)
-                                {
-                                    default:
-                                        ugeFxCmd = (UgeEffectTable)furFxCmd;
-                                        break;
-                                    case UgeEffectTable.SET_PANNING:
-                                        ugeFxCmd = UgeEffectTable.SET_PANNING;
-                                        // Update this channel's pan values
-                                        bool rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
-                                        bool leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
-                                        ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
+                                default:
+                                    break;
+                                case (UgeEffectTable)0xEC: // Note cut
+                                    ugeFxCmd = UgeEffectTable.NOTE_CUT;
+                                    break;
+                                case (UgeEffectTable)0xED: // Note delay
+                                    ugeFxCmd = UgeEffectTable.NOTE_DELAY;
+                                    break;
+                                case UgeEffectTable.SET_PANNING:
+                                    // Update this channel's pan values
+                                    bool rightSpeakerOn = ((byte)(furFxVal & 0x0F) > 0) ? true : false;
+                                    bool leftSpeakerOn = ((byte)((furFxVal & 0xF0) >> 4) > 0) ? true : false;
+                                    ugeGBChannelStates[chanID].SetPan(leftSpeakerOn, rightSpeakerOn);
 
-                                        // Update the pan value based on all of the GB Channels' current pan states
-                                        ugeFXVal = 0x0;
-                                        foreach (UgeGBChannelState chanState in ugeGBChannelStates)
-                                        {
-                                            ugeFXVal |= chanState.GetPan();
-                                        }
-                                        break;
-                                    case UgeEffectTable.POSITION_JUMP:
-                                        ugeFxCmd = UgeEffectTable.POSITION_JUMP;
-                                        ugeFXVal++;
-                                        break;
-                                    case UgeEffectTable.PATTERN_BREAK:
-                                        ugeFxCmd = UgeEffectTable.PATTERN_BREAK;
-                                        ugeFXVal++;
-                                        break;
-                                }
-
-                                if (ugeFXVal > 0 && ugeFxCmd != null && ugeFxCmd < UgeEffectTable.MAX)
-                                    patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                                    // Update the pan value based on all of the GB Channels' current pan states
+                                    ugeFXVal = 0x0;
+                                    foreach (UgeGBChannelState chanState in ugeGBChannelStates)
+                                    {
+                                        ugeFXVal |= chanState.GetPan();
+                                    }
+                                    break;
+                                case UgeEffectTable.POSITION_JUMP:
+                                    ugeFXVal++;
+                                    break;
+                                case UgeEffectTable.PATTERN_BREAK:
+                                    ugeFXVal++;
+                                    break;
                             }
+
+                            //if (ugeFXVal > 0 && ugeFxCmd != null && ugeFxCmd < UgeEffectTable.MAX)
+                            if (ugeFXVal > 0 && ugeFxCmd != UgeEffectTable.EMPTY)
+                                patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, (UgeEffectTable)ugeFxCmd, ugeFXVal);
+                            
                         }
 
                     }

@@ -65,8 +65,11 @@ Macros are partially supported, with a few more things to note:
 There are no dependencies required, beyond .NET and C#: Clone the project and build in your favorite IDE (e.g. Visual Studio)
 
 A Powershell script has been included to output all target platforms to ``publish/output``. Simply type:
-```.\build-and-package.ps1 -Version "v1.2.3"```
-Where ``1.2.3`` is the version string to export with.
+
+```
+.\build-and-package.ps1 -Version "v1.2.3"
+```
+(``1.2.3`` is an example of the version string to export with.)
 
 ## License
 

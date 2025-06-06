@@ -16,22 +16,23 @@ namespace fur2Uge
             int panMacroOnChannel = 0;
 
             // File in/out arg parsing
-            if (config["i"].Length > 0 && config["o"].Length > 0)
+            if (!string.IsNullOrEmpty(config["i"]) && !string.IsNullOrEmpty(config["o"]))
             {
                 fIn = config["i"];
                 fOut = config["o"];
 
                 // Create the directories, if they do not exist.
-                bool exists = System.IO.Directory.Exists(Path.GetDirectoryName(fIn));
-                if (!exists)
-                    System.IO.Directory.CreateDirectory(Path.GetDirectoryName(fIn));
-                exists = System.IO.Directory.Exists(Path.GetDirectoryName(fOut));
-                if (!exists)
-                    System.IO.Directory.CreateDirectory(Path.GetDirectoryName(fOut));
+                string inDir = Path.GetDirectoryName(fIn);
+                if (!string.IsNullOrEmpty(inDir) && !Directory.Exists(inDir))
+                    Directory.CreateDirectory(inDir);
+
+                string outDir = Path.GetDirectoryName(fOut);
+                if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
+                    Directory.CreateDirectory(outDir);
             }
             else
             {
-                throw new Exception("Please provide an input and output path.\n\nUsage:\nfur2uge --i <input>.fur --o <output>.fur");
+                throw new Exception("Please provide an input and output path.\n\nUsage:\nfur2uge --i <input>.fur --o <output>.uge");
             }
 
             if (config["d"] != null)

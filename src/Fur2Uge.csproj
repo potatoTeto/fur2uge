@@ -13,9 +13,32 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="convert.bat">
+    <!-- Always include input files -->
+    <None Include="input\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+
+    <!-- Always include both scripts -->
+    <None Include="convert.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+
+    <None Include="convert.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="RemovePlatformSpecificScripts" AfterTargets="Publish">
+    <!-- Remove Windows .bat script from non-Windows publish outputs -->
+    <Delete Files="$(PublishDir)convert.bat"
+            Condition="'$(RuntimeIdentifier)' != 'win-x64' AND Exists('$(PublishDir)convert.bat')" />
+
+    <!-- Remove .sh script from Windows publish outputs -->
+    <Delete Files="$(PublishDir)convert.sh"
+            Condition="'$(RuntimeIdentifier)' == 'win-x64' AND Exists('$(PublishDir)convert.sh')" />
+  </Target>
 
 </Project>

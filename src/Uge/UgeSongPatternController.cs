@@ -30,6 +30,17 @@ namespace fur2Uge
             _initialTicksPerRow = value;
         }
 
+        public void SetTimerBasedTempoDivider(uint divider)
+        {
+            _timerBasedTempoDivider = divider;
+        }
+
+        public void SetTimerEnabled(bool enabled)
+        {
+            _timerBasedTempoEnabled = enabled;
+        }
+
+
         public byte[] EmitBytes(UgeFile.UgeHeader header)
         {
             List<byte> byteList = new List<byte>();

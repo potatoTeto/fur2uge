@@ -248,5 +248,12 @@ namespace fur2Uge
         {
             _ugeSongPatternController.AppendSongPattern(ugeOrderID);
         }
+
+        public void SetSongSpeed((int ticksPerRow, int timerDivider, bool timerEnabled, double sourceBpm, double resultBpm) ugeSpeedData)
+        {
+            _ugeSongPatternController.SetInitialTicksPerRow((uint)ugeSpeedData.ticksPerRow);
+            _ugeSongPatternController.SetTimerBasedTempoDivider((uint)ugeSpeedData.timerDivider);
+            _ugeSongPatternController.SetTimerEnabled(ugeSpeedData.timerEnabled);
+        }
     }
 }

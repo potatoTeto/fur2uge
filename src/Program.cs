@@ -146,7 +146,45 @@ namespace fur2Uge
             }
 
             // Set the project speed
-            ugeFile.SetSpeed(furSong.Speed1);
+            int furBaseSpeed = furSong.Speed1;
+            int furStartTick = furSong.TimeBase;
+            int[] furSpeedPatternSteps = furSong.SpeedPattern;
+            int furSpeedPatternLen = furSong.SpeedPatternLen;
+            int tempoNum = furSong.VirtualTempoNumerator;
+            int tempoDen = furSong.VirtualTempoDenominator;
+            float furTicksPerSecond = furSong.TicksPerSecond;
+            int furHighlightA = furSong.HighlightA;
+
+            // Assuming only the first speed pattern value is used:
+            double furSpeedFirst = furSong.SpeedPattern.Length > 0 ? (double)furSong.SpeedPattern[0] : furBaseSpeed;
+
+            double[] furSpeedPatternDoubles = furSpeedPatternSteps.Select(s => (double)s).ToArray();
+            double furHz = (double)furTicksPerSecond;
+
+            var ugeSpeedData = TempoConversionHelper.ConvertFurTempoToUge(
+                furStartTick,
+                furBaseSpeed,
+                furSpeedPatternDoubles,
+                tempoNum,
+                tempoDen,
+                (double)furTicksPerSecond,
+                furHighlightA);
+
+
+            if (ugeSpeedData.WasApproximate && ugeSpeedData.FurnaceSuggestion != null)
+            {
+                Console.WriteLine("WARNING: Tempo was approximated.");
+                Console.WriteLine(ugeSpeedData.FurnaceSuggestion);
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey(true);
+            }
+
+            ugeFile.SetSongSpeed((
+                ugeSpeedData.TicksPerRow,
+                ugeSpeedData.TimerDivider,
+                ugeSpeedData.TimerEnabled,
+                ugeSpeedData.SourceBpm,
+                ugeSpeedData.ResultBpm));
 
             /// Sort the Furnace unique-per-channel order table to accomodate for hUGETracker's global pattern layout
             // Input a uge Pattern Index, get the fur pattern index

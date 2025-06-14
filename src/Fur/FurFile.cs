@@ -456,6 +456,12 @@ namespace fur2Uge
                                     var baseData3 = reader.ReadByte();
                                     blockLen -= 4;
 
+                                    var baseData4 = 0;
+                                    if (instFormatVersion >= 224) {
+                                        baseData4 = reader.ReadByte(); // Extra block data (not implemented)
+                                        blockLen--;
+                                    }
+
                                     // Data for each active Operator
                                     List<FurOpData> furOPData = new List<FurOpData>();
                                     for (var j = 0; j < opCount; j++)

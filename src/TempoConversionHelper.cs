@@ -34,17 +34,14 @@ namespace fur2Uge
         /// <param name="tickRateHz">Tick rate in Hz (Furnace song base frequency)</param>
         /// <returns>Conversion result including best hUGETracker timer settings</returns>
         public static UgeTempoResult ConvertFurTempoToUge(
-            int timeBaseFromSong,
-            int baseSpeed,
-            double[] speedPattern,
-            int virtualTempoN,
-            int virtualTempoD,
-            double tickRateHz,
-            int highlightA)
+    int timeBaseFromSong,
+    int baseSpeed,
+    double speed,
+    int virtualTempoN,
+    int virtualTempoD,
+    double tickRateHz,
+    int highlightA)
         {
-            // Use first speed value as Furnace Speed (= TicksPerRow in hUGETracker)
-            double speed = (speedPattern != null && speedPattern.Length > 0) ? speedPattern[0] : 1.0;
-
             // HighlightA fallback
             double hl = highlightA > 0 ? highlightA : 4.0;
 

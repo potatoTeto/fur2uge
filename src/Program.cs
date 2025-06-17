@@ -155,21 +155,28 @@ namespace fur2Uge
             float furTicksPerSecond = furSong.TicksPerSecond;
             int furHighlightA = furSong.HighlightA;
 
-            // Assuming only the first speed pattern value is used:
-            double furSpeedFirst = furSong.SpeedPattern.Length > 0 ? (double)furSong.SpeedPattern[0] : furBaseSpeed;
+            // Compute average speed pattern if more than 1 value, else use first value
+            double furSpeedAvg;
+            if (furSpeedPatternLen > 1 && furSpeedPatternSteps.Length >= furSpeedPatternLen)
+            {
+                furSpeedAvg = furSpeedPatternSteps.Take(furSpeedPatternLen).Average(s => (double)s);
+            }
+            else
+            {
+                furSpeedAvg = furSpeedPatternSteps.Length > 0 ? (double)furSpeedPatternSteps[0] : furBaseSpeed;
+            }
 
-            double[] furSpeedPatternDoubles = furSpeedPatternSteps.Select(s => (double)s).ToArray();
+            // Pass single-value array with effective speed into conversion
             double furHz = (double)furTicksPerSecond;
 
             var ugeSpeedData = TempoConversionHelper.ConvertFurTempoToUge(
                 furStartTick,
                 furBaseSpeed,
-                furSpeedPatternDoubles,
+                furSpeedAvg,
                 tempoNum,
                 tempoDen,
-                (double)furTicksPerSecond,
+                furHz,
                 furHighlightA);
-
 
             if (ugeSpeedData.WasApproximate && ugeSpeedData.FurnaceSuggestion != null)
             {

@@ -22,8 +22,8 @@
             private uint _type;
             private UgeInstrumentType _typeEnum;
             private shortstring _name;
-            private uint _length;
-            private bool _lengthEnabled;
+            private uint _length = 0x3F;
+            private bool _lengthEnabled = false;
             private byte _initialVolume;
             private uint _volSweepDir; // 0 = Increase, 1 = Decrease
             private byte _volSweepSpeed;
@@ -100,10 +100,12 @@
                 _volSweepSpeed = volSweepSpeed;
                 _length = length;
 
-                ParseMacros(macros, panMacroOnChannel);
-
-                if (_length < 64)
+                if (_length < 0x3F)
                     _lengthEnabled = true;
+                else
+                    _length = 0x3F; // Never go over the cap length value
+
+                ParseMacros(macros, panMacroOnChannel);
 
                 if (gbHWSeqCmds.Count > 0)
                 {

@@ -344,6 +344,7 @@ namespace fur2Uge
 
                         // Now instruments
                         int instrVal = thisRowData.GetInstrumentVal();
+                        FurInstrument targetInstrument = null;
                         bool duplicateInstr = false;
                         int duplicateCheckingIndex = 0;
                         byte gbEnvVol;
@@ -365,6 +366,7 @@ namespace fur2Uge
                                             {
                                                 duplicateInstr = true;
                                                 instrVal = duplicateCheckingIndex;
+                                                targetInstrument = inst;
                                                 break;
                                             }
                                             duplicateCheckingIndex++;
@@ -373,6 +375,7 @@ namespace fur2Uge
                                         {
                                             furPulseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
                                             instrVal = furPulseInstruments.Count - 1;
+                                            targetInstrument = furPulseInstruments[furPulseInstruments.Count - 1];
                                         }
                                         break;
                                     case 2:
@@ -382,6 +385,7 @@ namespace fur2Uge
                                             {
                                                 duplicateInstr = true;
                                                 instrVal = duplicateCheckingIndex;
+                                                targetInstrument = inst;
                                                 break;
                                             }
                                             duplicateCheckingIndex++;
@@ -390,6 +394,7 @@ namespace fur2Uge
                                         {
                                             furWaveInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
                                             instrVal = furWaveInstruments.Count - 1;
+                                            targetInstrument = furWaveInstruments[furWaveInstruments.Count - 1];
                                         }
                                         break;
                                     case 3:
@@ -399,6 +404,7 @@ namespace fur2Uge
                                             {
                                                 duplicateInstr = true;
                                                 instrVal = duplicateCheckingIndex;
+                                                targetInstrument = inst;
                                                 break;
                                             }
                                             duplicateCheckingIndex++;
@@ -407,6 +413,7 @@ namespace fur2Uge
                                         {
                                             furNoiseInstruments.Add(moduleInfo.GlobalInstruments[instrVal]);
                                             instrVal = furNoiseInstruments.Count - 1;
+                                            targetInstrument = furNoiseInstruments[furNoiseInstruments.Count - 1];
                                         }
                                         break;
                                 }
@@ -476,29 +483,47 @@ namespace fur2Uge
                         }
 
                         // Now copy the volume column (which might or might not get overwritten if an effect is present)
-                        if (volVal >= 0 && (!newVolInstr || !autoVolumeDetection)) {
-
+                        if (volVal >= 0 && (!newVolInstr || !autoVolumeDetection))
+                        {
                             byte outVol = (byte)volVal;
 
                             if (instrVal >= 0)
                             {
-                                (int, int, int) env = moduleInfo.GlobalInstruments[instrVal].GetInstrGB().GetEnvParams(); // returns (_gbEnvVol, _gbEnvLen, _gbEnvDir)
-                                var envVol = env.Item1;
-                                var envLen = env.Item2;
-                                var envDir = env.Item3 <= 0 ? 1 : -1;
+                                (int envVol, int envLen, int envDirRaw) = (0, 0, 0);
+                                if (targetInstrument != null)
+                                {
+                                    (envVol, envLen, envDirRaw) = targetInstrument.GetInstrGB().GetEnvParams();
+                                }
+                                else
+                                {
+                                    (envVol, envLen, envDirRaw) = moduleInfo.GlobalInstruments[instrVal].GetInstrGB().GetEnvParams();
+                                }
 
+                                // For CH3, envelope doesn’t apply
                                 if (chanID == 2)
                                 {
                                     envLen = 0;
-                                    envDir = 0;
+                                    envDirRaw = 0;
                                 }
-                                int hiNybble = ((envLen * envDir) << 4) & 0xFF;
 
-                                outVol += (byte)(hiNybble);
+                                byte envNibble;
+                                if (envDirRaw > 0)
+                                {
+                                    // Envelope increasing: 9–F
+                                    envNibble = (byte)(0xF0 & (envLen << 4));
+                                }
+                                else
+                                {
+                                    // Envelope decreasing: 1–7
+                                    envNibble = (byte)(0xF0 & (envLen << 4));
+                                }
+
+                                outVol += envNibble;
                             }
 
                             patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, rowIndex, UgeEffectTable.SET_VOL, outVol);
                         }
+
 
                         // Finally, copy all of the effect columns for this channel's row
 

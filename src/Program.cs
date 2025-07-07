@@ -102,21 +102,21 @@ namespace fur2Uge
                 }
             }
 
-            if (config["notgbs"] != null)
+            if (config["gbstmode"] != null)
             {
                 try
                 {
-                    int gbsOption = Int32.Parse(config["notgbs"]);
+                    int gbsOption = Int32.Parse(config["gbstmode"]);
                     if (gbsOption == 0)
                         isGBStudio = false;
                     else if (gbsOption == 1)
                         isGBStudio = true;
                     else
-                        throw new Exception($"Invalid argument for --notgbs {gbsOption}.\nPlease specify 0 (disable GBStudio mode) or 1 (enable GBStudio mode).");
+                        throw new Exception($"Invalid argument for --gbstmode {gbsOption}.\nPlease specify 0 (disable GBStudio mode) or 1 (enable GBStudio mode).");
                 }
                 catch (FormatException)
                 {
-                    Console.WriteLine($"Unable to parse '{config["notgbs"]}'");
+                    Console.WriteLine($"Unable to parse '{config["gbstmode"]}'");
                 }
             }
 

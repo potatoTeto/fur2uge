@@ -25,7 +25,7 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 
 ``--u <VersionNum 0-6>`` - Specify the output .uge Version. (Versions <=5 do not support Sub-patterns/Furnace macros!)
 
-``--notgbs <0 or 1>`` - By default, tempo conversion assumes you're targeting GBStudio, which uses a Timer Divider locked at ``192`` and may produce slightly off BPM results. Use this flag to control GBStudio mode explicitly: ``0`` disables GBStudio mode and allows precise BPM matching using standard hUGETracker timer calculations, while ``1`` enables GBStudio mode (default behavior). **GBStudio users must manually correct song speeds by spamming Fxx commands throughout the song as needed, either before or after conversion.**
+``--gbstmode <0 or 1>`` - By default, tempo conversion assumes you're targeting GBStudio, which uses a Timer Divider locked at ``192`` and may produce slightly off BPM results. Use this flag to control GBStudio mode explicitly: ``0`` disables GBStudio mode and allows precise BPM matching using standard hUGETracker timer calculations, while ``1`` enables GBStudio mode (default behavior). **GBStudio users must manually correct song speeds by spamming Fxx commands throughout the song as needed, either before or after conversion.**
 
 ## Caveats
 - All patterns must have 64 rows. They cannot be increased or decreased. However, cutting the pattern short with Dxx and Bxx is allowed.

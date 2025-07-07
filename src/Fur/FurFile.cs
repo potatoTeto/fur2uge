@@ -83,8 +83,8 @@ namespace fur2Uge
 
                 // Populate all of the song info
                 // More detail on the format here: https://github.com/tildearrow/furnace/blob/master/papers/format.md#song-info
-                _furModuleInfo.InfoBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
-                _furModuleInfo.BlockSize = reader.ReadInt32();
+                firstSong.InfoBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
+                firstSong.BlockSize = reader.ReadInt32();
                 var firstTimeBase = reader.ReadByte();
                 var firstSpeed1 = reader.ReadByte();
                 var firstSpeed2 = reader.ReadByte();
@@ -338,8 +338,8 @@ namespace fur2Uge
                 firstSong.SetVirtualTempo(virtualTempoNumeratorOfFirstSong, virtualTempoDenominatorOfFirstSong);
 
                 /// Additional Subsongs
-                _furModuleInfo.FirstSubsongName = GetNextString(sb, reader);
-                _furModuleInfo.FirstSubsongComment = GetNextString(sb, reader);
+                firstSong.SongName = GetNextString(sb, reader);
+                firstSong.SongComment = GetNextString(sb, reader);
                 _furModuleInfo.NumOfAdditionalSubsongs = reader.ReadByte();
                 _furModuleInfo.ReservedAdditionalSubsongs = reader.ReadByte() << 16 | reader.ReadByte() << 8 | reader.ReadByte();
 
@@ -390,13 +390,13 @@ namespace fur2Uge
                 _furModuleInfo.ReservedMoreCompatFlags = reader.ReadByte();
 
                 /// Speed Pattern of First Song (>=139)
-                var speedPatternLen = reader.ReadByte();
+                firstSong.SpeedPatternLen = reader.ReadByte();
                 // (Fail if this is lower than 0 or higher than 16)
-                if (speedPatternLen < 0 || speedPatternLen > 16)
-                    throw new Exception(string.Format("Speed Pattern Length out of Range (0-16): {0}", speedPatternLen));
+                if (firstSong.SpeedPatternLen < 0 || firstSong.SpeedPatternLen > 16)
+                    throw new Exception(string.Format("Speed Pattern Length out of Range (0-16): {0}", firstSong.SpeedPatternLen));
 
                 var speedPattern = reader.ReadBytes(16);
-                firstSong.SetSpeedPattern(speedPatternLen, speedPattern);
+                firstSong.SetSpeedPattern(firstSong.SpeedPatternLen, speedPattern);
 
                 /// Groove List
                 _furModuleInfo.GrooveCount = reader.ReadByte();
@@ -839,6 +839,118 @@ namespace fur2Uge
                     }
                 }
 
+                // Populate all the subsongs
+                if (_furHeader.GetVersion() >= 95)
+                {
+                    for (var i = 0; i < _furModuleInfo.SubsongDataPointers.Count; i++)
+                    {
+                        var subSong = new FurSong();
+                        _furSongs.Add(subSong);
+
+                        reader.BaseStream.Seek(_furModuleInfo.SubsongDataPointers[i], SeekOrigin.Begin);
+
+                        // Populate all of the song info
+                        // More detail on the format here: https://github.com/tildearrow/furnace/blob/master/papers/format.md#subsong
+                        subSong.InfoBlockID = System.Text.Encoding.Default.GetString(reader.ReadBytes(4));
+                        subSong.BlockSize = reader.ReadInt32();
+                        var subSongTimeBase = reader.ReadByte();
+                        var subSongSpeed1 = reader.ReadByte();
+                        var subSongSpeed2 = reader.ReadByte();
+                        var subSongInitialArpTime = reader.ReadByte();
+                        var subSongTicksPerSecond = BitConverter.ToSingle(reader.ReadBytes(4), 0);
+                        var subSongPatternLen = reader.ReadUInt16();
+                        if (subSongPatternLen > PATTERN_LEN_LIMIT)
+                            throw new Exception(string.Format("Invalid pattern length: {0}", subSongPatternLen));
+                        var subSongOrdersLen = reader.ReadUInt16();
+                        if (_furHeader.GetVersion() >= 80)
+                        {
+                            if (subSongOrdersLen > 256)
+                                throw new Exception(string.Format("Invalid number of Orders: {0} (Furnace version: {1})", subSongPatternLen, _furHeader.GetVersion()));
+                        }
+                        else
+                        {
+                            if (subSongOrdersLen > 127)
+                                throw new Exception(string.Format("Invalid number of Orders: {0} (Furnace version: {1})", subSongPatternLen, _furHeader.GetVersion()));
+                        }
+
+                        var subSongHighlightA = reader.ReadByte();
+                        var subSongHighlightB = reader.ReadByte();
+
+                        subSong.InitDataA(subSongTimeBase, subSongSpeed1, subSongSpeed2, subSongInitialArpTime, subSongTicksPerSecond, subSongPatternLen, subSongOrdersLen, subSongHighlightA, subSongHighlightB);
+
+                        /// Virtual Tempo Data
+                        var virtualTempoNumeratorOfSubSong = reader.ReadUInt16();
+                        var virtualTempoDenominatorOfSubSong = reader.ReadUInt16();
+                        subSong.SetVirtualTempo(virtualTempoNumeratorOfSubSong, virtualTempoDenominatorOfSubSong);
+
+                        subSong.SongName = GetNextString(sb, reader);
+                        subSong.SongComment = GetNextString(sb, reader);
+
+                        // Now, populate the order table for the first song (Top to bottom first, then left to right)
+                        int[,] subSongOrderTable = new int[_furModuleInfo.TotalChanCount, subSongOrdersLen];
+                        for (var x = 0; x < _furModuleInfo.TotalChanCount; x++)
+                        {
+                            for (var y = 0; y < subSongOrdersLen; y++)
+                            {
+                                var orderVal = reader.ReadByte();
+                                if (_furHeader.GetVersion() < 80)
+                                {
+                                    if (orderVal > 0x7F)
+                                        throw new Exception(string.Format("Order value is too high! (Val: {0})", orderVal));
+                                }
+                                else if (orderVal > 0xFF)
+                                    throw new Exception(string.Format("Order value is too high! (Val: {0})", orderVal));
+                                subSongOrderTable[x, y] = orderVal;
+                            }
+                        }
+                        subSong.PopulateOrderTable(subSongOrderTable);
+
+                        // Number of effect columns (of the Sub-Song)
+                        for (var x = 0; x < _furModuleInfo.TotalChanCount; x++)
+                        {
+                            var effectColumnCount = reader.ReadByte();
+                            subSong.AddEffectColumnCount(x, effectColumnCount);
+                        }
+
+                        // Channel hide status (of the Sub-Song)
+                        for (var x = 0; x < _furModuleInfo.TotalChanCount; x++)
+                        {
+                            var channelHideStatus = reader.ReadByte();
+                            subSong.AddChanHideStatus(x, channelHideStatus);
+                        }
+
+                        // Channel collapse status (of the Sub-Song)
+                        for (var x = 0; x < _furModuleInfo.TotalChanCount; x++)
+                        {
+                            var channelCollapseStatus = reader.ReadByte();
+                            subSong.AddChanCollapseStatus(x, channelCollapseStatus);
+                        }
+
+                        // Channel Names (of the Sub-Song)
+                        for (var x = 0; x < _furModuleInfo.TotalChanCount; x++)
+                        {
+                            var chanName = GetNextString(sb, reader);
+                            subSong.AddChanName(x, chanName);
+                        }
+
+                        // Channel Short Names (of the Sub-Song)
+                        for (var x = 0; x < _furModuleInfo.TotalChanCount; x++)
+                        {
+                            var chanName = GetNextString(sb, reader);
+                            subSong.AddChanShortName(x, chanName);
+                        }
+
+                        // Set Speed pattern data, if applicable
+                        if (_furHeader.GetVersion() >= 139)
+                        {
+                            subSong.SpeedPatternLen = reader.ReadByte();
+
+                            speedPattern = reader.ReadBytes(16);
+                            subSong.SetSpeedPattern(subSong.SpeedPatternLen, speedPattern);
+                        }
+                    }
+                }
+
                 // Populate all the channels for every song.
                 foreach (FurSong s in _furSongs)
                 {
@@ -1213,6 +1325,11 @@ namespace fur2Uge
         public FurSong GetSong(int songIndex)
         {
             return _furSongs[songIndex];
+        }
+
+        public int GetSongCount()
+        {
+            return _furSongs.Count;
         }
 
         private string GetNextString(StringBuilder sb, BinaryReader reader)

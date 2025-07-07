@@ -9,8 +9,6 @@
             public Dictionary<FurChipType, int> ChanCountLookup;
             public List<FurChipCounter> SoundChipChanCountList;
 
-            public string InfoBlockID;
-            public int BlockSize;
             public int InstrumentCount;
             public int WavetableCount;
             public int SampleCount;
@@ -79,8 +77,6 @@
             public byte DisableSampleMacro;
             public byte BrokenOutVolEpisode2;
             public byte OldArpStrat;
-            public string FirstSubsongName;
-            public string FirstSubsongComment;
             public byte NumOfAdditionalSubsongs;
             public int ReservedAdditionalSubsongs;
             public List<int> SubsongDataPointers;

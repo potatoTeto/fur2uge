@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 using static fur2Uge.FurFile;
 using static fur2Uge.UgeFile;
 
@@ -103,26 +104,73 @@ namespace fur2Uge
             // Read the .fur into memory
             FurFile furFile = new FurFile(fIn, dumpCompressedFur, decompressedFurPath);
 
-            // Prepare a .uge data tree to modify
-            UgeFile ugeFile = new UgeFile((uint)ugeVersion);
-
             // Parse the .fur file, and then populate its data into the .uge data tree we created
-            ParseFur(furFile, ugeFile, autoVolumeDetection, panMacroOnChannel);
+            (List <UgeFile> ugeFiles, List<string> subSongNames) = ParseFur(furFile, (uint)ugeVersion, autoVolumeDetection, panMacroOnChannel);
 
-            // Write the .uge data to a binary.
-            ugeFile.Write(fOut);
+            if (ugeFiles.Count == 1)
+            {
+                // Only one song, use the original output filename
+                ugeFiles[0].Write(fOut);
+            }
+            else
+            {
+                // For all subsongs we converted to .fur, write each uge's data to a binary file
+                for (var i = 0; i < ugeFiles.Count; i++)
+                {
+                    string baseName = Path.GetFileNameWithoutExtension(fOut);
+                    string directory = Path.GetDirectoryName(fOut);
+
+                    // Sanitize song name
+                    string songName = subSongNames[i];
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        songName = songName.Replace(c, '_');
+                    }
+
+                    string outputPath = Path.Combine(directory, $"{baseName}_Song{i}_{songName}.uge");
+                    ugeFiles[i].Write(outputPath);
+                }
+            }
         }
 
-        public static void ParseFur(FurFile furFile, UgeFile ugeFile, bool autoVolumeDetection, int panMacroOnChannel)
+        public static (List<UgeFile> ugeFiles, List<string> subSongNames) ParseFur(FurFile furFile, uint ugeVersion, bool autoVolumeDetection, int panMacroOnChannel)
         {
             FurModuleInfo moduleInfo = furFile.GetModuleInfo();
-
-            // Grab the first song
-            FurSong furSong = furFile.GetSong(0);
 
             // Ensure we are dealing with a valid GB Module
             if (moduleInfo.SoundChipTypeList[0] != FurChipType.GAME_BOY)
                 throw new Exception("This .fur is not a GB module! Aborting...");
+
+            int furSongCount = furFile.GetSongCount();
+
+            List<UgeFile> ugeFiles = new List<UgeFile>();
+            List<string> subSongNames = new List<string>();
+
+            // Loop through every single song and process an entire uge file based on the input data
+            for (int songIndex = 0; songIndex < furSongCount; songIndex++)
+            {
+                // Grab the song
+                FurSong subSong = furFile.GetSong(songIndex);
+
+                // Grab the name of the song
+                subSongNames.Add(subSong.SongName);
+
+                // Parse the song
+                UgeFile subSongAsUge = ParseSong(subSong, moduleInfo, ugeVersion, autoVolumeDetection, panMacroOnChannel);
+
+                // Add the song to the list of songs we're converting
+                ugeFiles.Add(subSongAsUge);
+            }
+
+            return (ugeFiles, subSongNames);
+        }
+
+        public static UgeFile ParseSong(FurSong furSong, FurModuleInfo moduleInfo, uint ugeVersion, bool autoVolumeDetection, int panMacroOnChannel)
+        {
+
+            // Prepare a .uge data tree to modify
+            UgeFile ugeFile = new UgeFile((uint)ugeVersion);
+
             if (furSong.PatternLen != 64)
                 throw new Exception("Invalid pattern count! It MUST be set to 64! Aborting...");
 
@@ -318,7 +366,7 @@ namespace fur2Uge
                             // Do not attempt to write certain effects iteratively
                             if (ugeFxCmd == UgeEffectTable.NOTE_DELAY || ugeFxCmd == UgeEffectTable.NOTE_CUT || ugeFxCmd == UgeEffectTable.EMPTY || ugeFxCmd == UgeEffectTable.SET_SPEED || ugeFxCmd == UgeEffectTable.SET_PANNING)
                                 break;
-                            
+
                             patCon.SetEffect((GBChannel)chanID, (byte)ugePatternID, thisRowData.GetRowIndex() - i, (UgeEffectTable)ugeFxCmd, ugeFXVal);
                         }
 
@@ -534,8 +582,8 @@ namespace fur2Uge
                             furFxCmdIsPresent = furAllChannelFxColumns[i].GetCommandIsPresent();
                             if (furFxCmdIsPresent)
                                 furFxCmd = furAllChannelFxColumns[i].GetCommand();
-                            furFxValIsPresent = furAllChannelFxColumns[i].GetValueIsPresent(); 
-                            
+                            furFxValIsPresent = furAllChannelFxColumns[i].GetValueIsPresent();
+
                             if (furFxValIsPresent)
                                 furFxVal = furAllChannelFxColumns[i].GetValue();
 
@@ -757,6 +805,8 @@ namespace fur2Uge
                 ugeFile.SetNoiseInstr(instrIndex, ugeNoise);
                 instrIndex++;
             }
+
+            return ugeFile;
         }
 
         private static UgeNoteTable FurNoteToUgeNote(int furNoteVal)

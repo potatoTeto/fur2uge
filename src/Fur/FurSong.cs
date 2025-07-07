@@ -4,6 +4,11 @@ namespace fur2Uge
 {
     public class FurSong
     {
+        public string InfoBlockID { get; internal set; }
+        public int BlockSize { get; internal set; }
+        public string SongName { get; internal set; }
+        public string SongComment { get; internal set; }
+
         public int TimeBase;
         public int Speed1;
         public int Speed2;
@@ -79,7 +84,7 @@ namespace fur2Uge
             VirtualTempoDenominator = vtDenom;
         }
 
-        public void SetSpeedPattern(byte speedPatternLen, byte[] speedPattern)
+        public void SetSpeedPattern(int speedPatternLen, byte[] speedPattern)
         {
             SpeedPatternLen = speedPatternLen;
             SpeedPattern = new int[speedPattern.Length];

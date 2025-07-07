@@ -32,33 +32,29 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 - Only hardware envelopes are allowed for Pulse 1, Pulse 2, and Noise. “Initialize Envelope on Every Note” must be enabled.
 - Hardware sequence is allowed, but only on Pulse 1, and only for one tick (do not add more than one–the rest will be ignored!)
 - The effect column may not be expanded for any channel: Only one effect is allowed at any given time.
-- Subsongs are supported. If multiple subsongs are present, each will be written as a separate `.uge` file with an index and song name included in the filename.
+- Subsongs are supported. If multiple subsongs are present, each will be written as a separate `.uge` file with an index and, if available, the song name included in the filename. If a subsong name is empty, no extra underscore is added before the extension.
 
 **Example:**
 
 If your output path is:
-```
-output/ExampleFilename.uge
-```
+
+    output/ExampleFilename.uge
 
 And the `.fur` contains 3 subsongs:
-```
-Forest Intro  
-Boss Battle  
-Ending Theme  
-```
+
+    Forest Intro  
+    Boss Battle  
+    (unnamed subsong)  
 
 The following `.uge` files will be created:
-```
-output/ExampleFilename_Song0_Forest_Intro.uge  
-output/ExampleFilename_Song1_Boss_Battle.uge  
-output/ExampleFilename_Song2_Ending_Theme.uge  
-```
+
+    output/ExampleFilename_Song0_Forest_Intro.uge  
+    output/ExampleFilename_Song1_Boss_Battle.uge  
+    output/ExampleFilename_Song2.uge  
 
 If there is exactly one subsong, the original output filename is used:
-```
-output/ExampleFilename.uge
-```
+
+    output/ExampleFilename.uge
 
 - Tick Rate is recommended to be set to 60hz exactly. The tool will attempt to convert any custom Tick Rates, but expect potential inaccuracies if you try using Base Tempo/custom Hz rates. Should work in most cases though.
 - Volume may only be defined if an effect is not on the same row for the channel. Axy (Volume Slide) is an exception. Both Volume and Axy may only be used whenever a note is played. This is to ensure that audio output is converted accurately and as expected. This can be worked around by creating instruments that assign specific volume levels/volume ramps. Just keep in mind the 15-instrument limit mentioned in the previous bullet point above.

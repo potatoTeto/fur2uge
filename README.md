@@ -36,9 +36,9 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 
 **Example:**
 
-If your output path is:
+If your input path is:
 
-    output/ExampleFilename.uge
+    input/ExampleFilename.fur
 
 And the `.fur` contains 3 subsongs:
 
@@ -52,7 +52,7 @@ The following `.uge` files will be created:
     output/ExampleFilename_Song2_Boss_Battle.uge  
     output/ExampleFilename_Song3.uge  
 
-If there is exactly one subsong, the original output filename is used:
+If there is exactly one subsong, the original input filename is used for the output:
 
     output/ExampleFilename.uge
 

@@ -12,6 +12,7 @@ namespace fur2Uge
             IConfiguration config = new ConfigurationBuilder().AddCommandLine(args).Build();
 
             bool dumpCompressedFur = false;
+            bool isGBStudio = true; // Unused parameter, for now
             string decompressedFurPath = "";
             string fIn = string.Empty, fOut = string.Empty;
             int panMacroOnChannel = 0;
@@ -101,11 +102,16 @@ namespace fur2Uge
                 }
             }
 
+            if (config["notgbs"] != null)
+            {
+                isGBStudio = false;
+            }
+
             // Read the .fur into memory
             FurFile furFile = new FurFile(fIn, dumpCompressedFur, decompressedFurPath);
 
             // Parse the .fur file, and then populate its data into the .uge data tree we created
-            (List<UgeFile> ugeFiles, List<string> subSongNames) = ParseFur(furFile, (uint)ugeVersion, autoVolumeDetection, panMacroOnChannel);
+            (List<UgeFile> ugeFiles, List<string> subSongNames) = ParseFur(furFile, (uint)ugeVersion, autoVolumeDetection, panMacroOnChannel, isGBStudio);
 
             if (ugeFiles.Count == 1)
             {
@@ -136,7 +142,7 @@ namespace fur2Uge
             }
         }
 
-        public static (List<UgeFile> ugeFiles, List<string> subSongNames) ParseFur(FurFile furFile, uint ugeVersion, bool autoVolumeDetection, int panMacroOnChannel)
+        public static (List<UgeFile> ugeFiles, List<string> subSongNames) ParseFur(FurFile furFile, uint ugeVersion, bool autoVolumeDetection, int panMacroOnChannel, bool isGBStudio)
         {
             FurModuleInfo moduleInfo = furFile.GetModuleInfo();
 
@@ -159,7 +165,7 @@ namespace fur2Uge
                 subSongNames.Add(subSong.SongName);
 
                 // Parse the song
-                UgeFile subSongAsUge = ParseSong(subSong, moduleInfo, ugeVersion, autoVolumeDetection, panMacroOnChannel);
+                UgeFile subSongAsUge = ParseSong(subSong, moduleInfo, ugeVersion, autoVolumeDetection, panMacroOnChannel, isGBStudio);
 
                 // Add the song to the list of songs we're converting
                 ugeFiles.Add(subSongAsUge);
@@ -168,7 +174,7 @@ namespace fur2Uge
             return (ugeFiles, subSongNames);
         }
 
-        public static UgeFile ParseSong(FurSong furSong, FurModuleInfo moduleInfo, uint ugeVersion, bool autoVolumeDetection, int panMacroOnChannel)
+        public static UgeFile ParseSong(FurSong furSong, FurModuleInfo moduleInfo, uint ugeVersion, bool autoVolumeDetection, int panMacroOnChannel, bool isGBStudio)
         {
 
             // Prepare a .uge data tree to modify
@@ -198,7 +204,7 @@ namespace fur2Uge
 
             // Set the project speed
             int furBaseSpeed = furSong.Speed1;
-            int furStartTick = furSong.TimeBase;
+            int furTimeBase = furSong.TimeBase;
             int[] furSpeedPatternSteps = furSong.SpeedPattern;
             int furSpeedPatternLen = furSong.SpeedPatternLen;
             int tempoNum = furSong.VirtualTempoNumerator;
@@ -221,13 +227,12 @@ namespace fur2Uge
             double furHz = (double)furTicksPerSecond;
 
             var ugeSpeedData = TempoConversionHelper.ConvertFurTempoToUge(
-                furStartTick,
-                furBaseSpeed,
+                furTimeBase,
                 furSpeedAvg,
                 tempoNum,
                 tempoDen,
                 furHz,
-                furHighlightA);
+                furHighlightA, isGBStudio);
 
             if (ugeSpeedData.WasApproximate && ugeSpeedData.FurnaceSuggestion != null)
             {

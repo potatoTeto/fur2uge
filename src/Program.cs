@@ -105,7 +105,7 @@ namespace fur2Uge
             FurFile furFile = new FurFile(fIn, dumpCompressedFur, decompressedFurPath);
 
             // Parse the .fur file, and then populate its data into the .uge data tree we created
-            (List <UgeFile> ugeFiles, List<string> subSongNames) = ParseFur(furFile, (uint)ugeVersion, autoVolumeDetection, panMacroOnChannel);
+            (List<UgeFile> ugeFiles, List<string> subSongNames) = ParseFur(furFile, (uint)ugeVersion, autoVolumeDetection, panMacroOnChannel);
 
             if (ugeFiles.Count == 1)
             {
@@ -127,7 +127,10 @@ namespace fur2Uge
                         songName = songName.Replace(c, '_');
                     }
 
-                    string outputPath = Path.Combine(directory, $"{baseName}_Song{i}_{songName}.uge");
+                    // Only include underscore if songName is not empty
+                    string namePart = string.IsNullOrWhiteSpace(songName) ? "" : $"_{songName}";
+
+                    string outputPath = Path.Combine(directory, $"{baseName}_Song{i+1}{namePart}.uge");
                     ugeFiles[i].Write(outputPath);
                 }
             }

@@ -48,9 +48,9 @@ And the `.fur` contains 3 subsongs:
 
 The following `.uge` files will be created:
 
-    output/ExampleFilename_Song0_Forest_Intro.uge  
-    output/ExampleFilename_Song1_Boss_Battle.uge  
-    output/ExampleFilename_Song2.uge  
+    output/ExampleFilename_Song1_Forest_Intro.uge  
+    output/ExampleFilename_Song2_Boss_Battle.uge  
+    output/ExampleFilename_Song3.uge  
 
 If there is exactly one subsong, the original output filename is used:
 

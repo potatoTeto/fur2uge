@@ -64,7 +64,8 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 Macros are partially supported, with a few more things to note:
 - Wave Macros may be utilized for setting the waveform on the Wavetable channel. Please note that the program will prioritize the first value in the macro. Alternatively, you can employ the Wave Sequencer for the same purpose, but it will only recognize the initial wave, devoid of any modulation, speed adjustment, or waveform morphing.
 - All macros must either A) share the same length and loop point as all the other macros in the instrument, or B) Except for the longest macro within the instrument, all other macros must have loop points shorter than the longest one. This is crucial as the program heavily utilizes Subpatterns to enable macro support. While the program will adhere to the user's specifications, deviating from this restriction may yield unexpected auditory outcomes.
-- Due to driver/design limitations, Panning Macros will only work if the entire song is mono whenever the instrument with a pan macro is used. It will also only work on Pulse 1. If you need it on a different channel, pass the ``--pan <ChannelNumber 0-3>`` argument into the program.
+- Due to driver and design limitations, Panning Macros only work on the Pulse 1 channel and require the entire song to be in mono during their use.
+To apply a Panning Macro to a different channel, use the ``--pan <channel_number 0–3>`` argument when running the program.
 
 ## Supported Furnace Effects:
 - 00xy - Arpeggio

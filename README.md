@@ -52,7 +52,7 @@ Place all of your prepared .fur files in the ``/input/`` folder, located at the 
 
 ## Caveats
 - All patterns must have 64 rows. They cannot be increased or decreased. However, cutting the pattern short with Dxx and Bxx is allowed.
-- No more than 15 different unique instruments may be played per channel (Pulse 1 & 2 combined may only have 15 instruments). A single instrument playing on all 4 channels will count as 3 instruments (Pulse, Wave, Noise).
+- No more than 15 different unique instruments may be used per channel type (Pulse, Wave, Noise). A single instrument playing on all 4 channels will count as 3 instruments (1 Pulse, 1 Wave, 1 Noise).
 - Only up to 16 waveforms are allowed. They must be exactly 32 blocks in length, with a height of 16 (0-F)
 - Only hardware envelopes are allowed for Pulse 1, Pulse 2, and Noise. “Initialize Envelope on Every Note” must be enabled.
 - Hardware sequence is allowed, but only on Pulse 1, and only for one tick (do not add more than one–the rest will be ignored!)

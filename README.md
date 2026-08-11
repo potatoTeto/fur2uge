@@ -78,12 +78,18 @@ To apply a Panning Macro to a different channel, use the ``--pan <channel_number
 - 0Bxx - Position Jump
 - 0Dxx - Pattern Break
 - 0Fxx - Set Speed
+- 11xx - Set Noise Length 
 - 12xx - Set Duty Cycle
 - 80xx - Set Pan (Software)
 - ECxx - Note Cut
 - EDxx - Note Delay
 
 **FFxx (Stop song) is not supported.** If you want the song to stop, create another row and loop it forever with 0Bxx.
+
+### Noise Length (11xx)
+Only affects the Noise channel. 1099 = 15-bit LFSR, 1101 = 7-bit LSFR / tone-like noise
+
+Furnace effect 11xx (noise mode) is converted as an instrument-level setting in hUGETracker. Because hUGETracker stores this as part of the noise instrument rather than a pattern effect, all notes using the same noise instrument should use the same 11xx value for consistent conversion results.
 
 ## Building
 

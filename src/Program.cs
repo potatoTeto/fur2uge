@@ -311,8 +311,11 @@ namespace fur2Uge
             List<FurInstrument> furPulseInstruments = new List<FurInstrument>();
             List<FurInstrument> furWaveInstruments = new List<FurInstrument>();
             List<FurInstrument> furNoiseInstruments = new List<FurInstrument>();
-            Dictionary<int, List<int>> seenVolumes = new Dictionary<int, List<int>>();
-            Dictionary<(int, byte), int> clonedVolInstrumentLookup = new Dictionary<(int, byte), int>();  // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
+            Dictionary<int, List<int>> seenVolumes = new Dictionary<int, List<int>>(); // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
+            Dictionary<(int, byte), int> clonedVolInstrumentLookup = new Dictionary<(int, byte), int>();
+            Dictionary<int, uint> noiseInstrumentModes = new Dictionary<int, uint>();
+            int[] currentUgeInstrument = new int[] { -1, -1, -1, -1 };  // Instrument Lookup: [ InstrumentID, Volume Level ] = remapped GB Instrument
+
             for (var i = 0; i < moduleInfo.GlobalInstruments.Count; i++)
             {
                 seenVolumes[i] = new List<int>();
@@ -549,6 +552,7 @@ namespace fur2Uge
                             }
 
                             patCon.SetInstrument((GBChannel)chanID, (byte)ugePatternID, rowIndex, instrVal);
+                            currentUgeInstrument[chanID] = instrVal;
                         }
 
                         // Now copy the volume column (which might or might not get overwritten if an effect is present)
@@ -675,6 +679,13 @@ namespace fur2Uge
                             switch ((UgeEffectTable)furFxCmd)
                             {
                                 default:
+                                    break;
+                                case (UgeEffectTable)0x11:
+                                    if (chanID == 3 && currentUgeInstrument[chanID] >= 0)
+                                    {
+                                        noiseInstrumentModes[currentUgeInstrument[chanID]] = (furFxVal == 0x01) ? 1U : 0U;
+                                        ugeFxCmd = UgeEffectTable.EMPTY;
+                                    }
                                     break;
                                 case (UgeEffectTable)0xEC: // Note cut
                                     ugeFxCmd = UgeEffectTable.NOTE_CUT;
@@ -822,6 +833,11 @@ namespace fur2Uge
                 List<FurInstrMacro> macros = noiseInst.GetMacros();
 
                 UgeInstrument ugeNoise = new UgeInstrument(name, (uint)UgeInstrumentType.NOISE, gbParams.Item1, (gbParams.Item2 > 0x1) ? 0U : 1U, gbParams.Item3, gbParams.Item4, gbParams.Item5, gbParams.Item6, gbParams.Item7, macros, null);
+
+                if (noiseInstrumentModes.TryGetValue(instrIndex, out uint noiseMode))
+                {
+                    ugeNoise.SetNoiseMode(noiseMode);
+                }
 
                 ugeFile.SetNoiseInstr(instrIndex, ugeNoise);
                 instrIndex++;

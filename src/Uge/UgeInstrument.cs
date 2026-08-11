@@ -396,6 +396,12 @@
             {
                 _dutyCycle = value;
             }
+
+            public void SetNoiseMode(uint value)
+            {
+                _noiseMode = value;
+            }
         }
     }
 }
+
